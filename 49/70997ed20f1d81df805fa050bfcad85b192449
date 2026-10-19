@@ -1,0 +1,81 @@
+.github/workflows/ci.yml
+  s_4792c0a8c09b36::t_98cc5b2694879c 1-35
+.github/workflows/release.yml
+  s_4792c0a8c09b36::t_da2350ea2130d8 1-40
+.gitignore
+  s_4792c0a8c09b36::t_4a535c95922fd1 1-2
+CHANGELOG.md
+  s_4792c0a8c09b36::t_78875096c6cbf8 1-8
+CONTRIBUTING.md
+  s_4792c0a8c09b36::t_3e6206c5793952 1-16
+LICENSE
+  s_4792c0a8c09b36::t_e10f8e29953b0e 1-21
+README.md
+  s_4792c0a8c09b36::t_9d9a6fde2c3d77 1-89
+scripts/check-tag.sh
+  s_4792c0a8c09b36::t_b4d2e97ce8a2ef 1-22
+scripts/package.sh
+  s_4792c0a8c09b36::t_59694b11565321 1-16
+statewide/LICENSE
+  s_4792c0a8c09b36::t_2806f340651b71 1-21
+statewide/README.md
+  s_4792c0a8c09b36::t_b1d4712a1f5d38 1-165
+statewide/client/main.lua
+  s_4792c0a8c09b36::t_3fe57b731c93cb 1-133
+statewide/client/notify.lua
+  s_4792c0a8c09b36::t_cdb3741ecf3662 1-15
+statewide/client/tablet.lua
+  s_4792c0a8c09b36::t_5bf9d8589be72c 1-83
+statewide/fxmanifest.lua
+  s_4792c0a8c09b36::t_dd8b1ea8bc016e 1-44
+statewide/lib/pure.lua
+  s_4792c0a8c09b36::t_efea17cb826f06 1-447
+statewide/nui/index.html
+  s_4792c0a8c09b36::t_411113de6c5a03 1-38
+statewide/nui/rect.js
+  s_4792c0a8c09b36::t_941b65792886cd 1-17
+statewide/nui/tablet.css
+  s_4792c0a8c09b36::t_c3a63735e91af8 1-160
+statewide/nui/tablet.js
+  s_4792c0a8c09b36::t_18f0d8c763c12d 1-116
+statewide/server/commands.lua
+  s_4792c0a8c09b36::t_0f45c6b03d6459 1-367
+statewide/server/events.lua
+  s_4792c0a8c09b36::t_644fe44082ac54 1-95
+statewide/server/exports.lua
+  s_4792c0a8c09b36::t_1a58f557c24efb 1-24
+statewide/server/http.lua
+  s_4792c0a8c09b36::t_3d98536e5f0ca3 1-62
+statewide/server/identity.lua
+  s_4792c0a8c09b36::t_8046ac4bf72281 1-28
+statewide/server/lifecycle.lua
+  s_4792c0a8c09b36::t_8e0d6b1b4de900 1-65
+statewide/server/locations.lua
+  s_4792c0a8c09b36::t_2616bee8544f99 1-91
+statewide/server/notify.lua
+  s_4792c0a8c09b36::t_6839d4ef2a1bf2 1-20
+statewide/server/state.lua
+  s_4792c0a8c09b36::t_dd5ebc2b2ab8b9 1-132
+statewide/server/tablet.lua
+  s_4792c0a8c09b36::t_243cfd1448a389 1-25
+statewide/shared/config.lua
+  s_4792c0a8c09b36::t_ab683988203864 1-49
+statewide/shared/locale.lua
+  s_4792c0a8c09b36::t_a4f2882fdbb685 1-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4970997ed20f1d81df805fa050bfcad85b192449",
+  "prompts": {},
+  "sessions": {
+    "s_4792c0a8c09b36": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6ec4cec-2d53-4609-b9ea-53e010c0822e",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "DrMxrcy <drmxrcy@gmail.com>"
+    }
+  }
+}
