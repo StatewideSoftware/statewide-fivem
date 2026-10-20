@@ -1,0 +1,51 @@
+.github/workflows/ci.yml
+  s_4792c0a8c09b36::t_945dc4c17d4ca5 15-17,38-70
+.github/workflows/release.yml
+  s_4792c0a8c09b36::t_7d397a13ed3d5b 15-17,25-35
+CHANGELOG.md
+  s_4792c0a8c09b36::t_a05dcbd42e0dd9 5-36
+statewide/README.md
+  s_4792c0a8c09b36::t_aabd95b1391f92 41-42,53,57,72-74,83,91,95,98-114,135-138,162-164,168-171
+statewide/client/tablet.lua
+  s_4792c0a8c09b36::t_343a4555c860f9 2-3,13-18,41-53,57,62-74,76,80-84,86-88,96,100-107,113-117,121,128-136
+statewide/fxmanifest.lua
+  s_4792c0a8c09b36::t_65a7467ad17551 6,44
+statewide/lib/pure.lua
+  s_4792c0a8c09b36::t_45802c68a9267d 64-74,127,135-145,370-371,463-473
+statewide/nui/frame.js
+  s_4792c0a8c09b36::t_ec772ec9e07974 1-45
+statewide/nui/index.html
+  s_4792c0a8c09b36::t_061e231a0badd3 14-15,25
+statewide/nui/tablet.css
+  s_4792c0a8c09b36::t_63abc192d057de 33,91,100
+statewide/nui/tablet.js
+  s_4792c0a8c09b36::t_d04e6fb48f1ab0 2,9-19,34-38,55-58,60-63,65-81,95-100,102-105,107,109-110,115-116,118,121,126-132,138-153,157,163,167-176
+statewide/server/commands.lua
+  s_4792c0a8c09b36::t_b727dee4eedc78 15,24-26,73-78,170-171,173
+statewide/server/events.lua
+  s_4792c0a8c09b36::t_689274f787195c 38-39
+statewide/server/state.lua
+  s_4792c0a8c09b36::t_93d810a539de78 84-87,128-136
+statewide/server/tablet.lua
+  s_4792c0a8c09b36::t_8361f8f6e9b9a8 14
+statewide/shared/config.lua
+  s_4792c0a8c09b36::t_e48bee467533b5 25,49-50
+statewide/shared/locale.lua
+  s_4792c0a8c09b36::t_e8b72ce1245b6b 3,6,8,10,12,17,19,21,23,29,31,33,42,51,55,65,68,77-78,102-105,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08577d0297ac5c86eb511dfb32289822b15b6547",
+  "prompts": {},
+  "sessions": {
+    "s_4792c0a8c09b36": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6ec4cec-2d53-4609-b9ea-53e010c0822e",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Statewide Software <contact@statewide.gg>"
+    }
+  }
+}
