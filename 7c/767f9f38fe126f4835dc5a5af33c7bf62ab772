@@ -1,0 +1,105 @@
+.github/workflows/ci.yml
+  s_ef6c7ce76308d1::t_8ffe690f776d23 12,20,40,55
+.github/workflows/release.yml
+  s_ef6c7ce76308d1::t_2213ad4ed4e3b0 12,20
+CHANGELOG.md
+  s_ef6c7ce76308d1::t_f940e02e7d9ef5 5-41,81
+README.md
+  s_ef6c7ce76308d1::t_85a8fa1ce7d964 29,39-41,49
+statewide/README.md
+  s_ef6c7ce76308d1::t_b054e28e867011 1-27,32-34,41,47,54-57,61,63,65-66,81-82,84,86-88,93,103,105-106,108,112-115,117-120,146-159,163,165-169,171-176,179-205,209-228,238-241,259-275,281,290,321-323,333,335,359,372,374,383,395,399-410,414-419,428-434,442,449-451,465-469,477-478,484-485,533-569,572,575-577,581-601,608-615,621-626,638-649
+statewide/client/callhud.lua
+  s_ef6c7ce76308d1::t_9fb69ec467a4c4 1-76
+statewide/client/citation.lua
+  s_ef6c7ce76308d1::t_829a5ae19eea57 1-30
+statewide/client/main.lua
+  s_ef6c7ce76308d1::t_ad44c5e45f1bc4 16,19-55,57-58,91,95-99,102-103,107,109-111,122-128,133-134
+statewide/client/scenemarkers.lua
+  s_ef6c7ce76308d1::t_e1cc2b7354b433 1-37
+statewide/client/tablet.lua
+  s_ef6c7ce76308d1::t_9d563e004c5027 65
+statewide/fxmanifest.lua
+  s_ef6c7ce76308d1::t_d33611fe8748d8 6,27-28,33,35,46,48,50,61-62,67-68
+statewide/lib/pure.lua
+  s_ef6c7ce76308d1::t_0c069b28a8bf9d 18-115,171-172,175-176,201-226,228,232-236,276,278,281-282,284-286,288,290,292-296,356-445,451-461,477-587,591,593,598-601,694-698,700-701,766,822-835,837-838,843-852,860-880,882-928,943-1111,1130-1167,1297,1307-1312,1315-1396,1400,1411-1452,1457,1462-1465,1493-1542,1566-1579,1581-1582,1601-1605,1649-1659,1664,1680,1685,1697-1968
+statewide/modules/ers/client.lua
+  s_ef6c7ce76308d1::t_8b83e42acaa489 1-16
+statewide/modules/ers/map.lua
+  s_ef6c7ce76308d1::t_7b31e0be475367 1-265
+statewide/modules/ers/server.lua
+  s_ef6c7ce76308d1::t_86bf1545327f25 1-413
+statewide/nui/callhud.css
+  s_ef6c7ce76308d1::t_e0baec0eae5e4c 1-166
+statewide/nui/callhud.js
+  s_ef6c7ce76308d1::t_d4b896952697ac 1-130
+statewide/nui/card.js
+  s_ef6c7ce76308d1::t_79c10bff87a8ca 46-65,68-72
+statewide/nui/citation.css
+  s_ef6c7ce76308d1::t_892653fafc2425 1-167
+statewide/nui/citation.js
+  s_ef6c7ce76308d1::t_c0d31b0473f1c8 1-173
+statewide/nui/frame.js
+  s_ef6c7ce76308d1::t_d49d24e479c305 6-7,16-21,52-68
+statewide/nui/idcard.js
+  s_ef6c7ce76308d1::t_58a59f43805d2b 36
+statewide/nui/index.html
+  s_ef6c7ce76308d1::t_89b22d8eead207 9-10,13-14,47,49
+statewide/nui/licence-card.css
+  s_ef6c7ce76308d1::t_3b7777199509a0 24,70
+statewide/nui/licence-card.js
+  s_ef6c7ce76308d1::t_80fd44c53d734f 67,69,76-78,86-94,96-97,99-108,110-113,116-135,138-142,147,152,155-156,161,164-165,167-174,178-179,181,183,192
+statewide/nui/tablet.css
+  s_ef6c7ce76308d1::t_6b1decbaec3710 2-8,10,135
+statewide/nui/tablet.js
+  s_ef6c7ce76308d1::t_037af88d121bc3 2,14-15,50,75,77-85,109-110,158
+statewide/server/arrival.lua
+  s_ef6c7ce76308d1::t_4c7651e18c5208 1-53
+statewide/server/callhud.lua
+  s_ef6c7ce76308d1::t_3649663994b142 1-339
+statewide/server/citations.lua
+  s_ef6c7ce76308d1::t_ea89bd0315775b 1-157
+statewide/server/commands.lua
+  s_ef6c7ce76308d1::t_41b3e0c7648611 6,24-34,55-60,62-71,76-141,143-147,149-150,152,158-160,172-174,185-188,197-198,207,209,215-217,221,238-239,242,251-252,254-273,278-281,285-302,306-308,310-326,328,330,338-340,342-348,362-364,373-375,413-414,418,420,424,426,439-440,444-445,447,463-465,481-483,488-502,512-514,521-522,526,548,552-553,555,569-577
+statewide/server/events.lua
+  s_ef6c7ce76308d1::t_1e49aeb08f8263 4,6-25,33-38,54-61,63,68,71,76,81-84,86,88-94,100-112,114,116-121,123-128,147-152,184-186
+statewide/server/exports.lua
+  s_ef6c7ce76308d1::t_062cc9c6ddd3a3 25-28
+statewide/server/http.lua
+  s_ef6c7ce76308d1::t_87fff948e98415 19-85,94-95,103,109-115,117-120,122-136,145-152,158-173,175-191
+statewide/server/idcard.lua
+  s_ef6c7ce76308d1::t_695c99db2062bf 55-56,60
+statewide/server/identity.lua
+  s_ef6c7ce76308d1::t_40bbd659d558c9 3-4,6,9-14,16-35,39-41,45-79,83-91
+statewide/server/lifecycle.lua
+  s_ef6c7ce76308d1::t_83d2ec28b77036 18-19,22-28,33,38-43,46,56,65-73,76-78,81,83-84,86-93
+statewide/server/locations.lua
+  s_ef6c7ce76308d1::t_f2d5f972534770 8-14,23-39,43-46,51,109-110,116-118,142-143,153
+statewide/server/modules.lua
+  s_ef6c7ce76308d1::t_79a91542550057 4,6-7,48-63,65-67
+statewide/server/scenemarkers.lua
+  s_ef6c7ce76308d1::t_430e901838074c 1-119
+statewide/server/state.lua
+  s_ef6c7ce76308d1::t_151d715ef7772e 31,42-81,95,110-115,118-123,126-185,187,189-190,193-202,204-248,250-272,275,278-297,302,308-319,338,360-361,370,374,381-418,420-424,428-432,436,441-469,471-472,474-475,477,484,497
+statewide/server/tablet.lua
+  s_ef6c7ce76308d1::t_cad160715f6fe1 11-12,14
+statewide/shared/config.lua
+  s_ef6c7ce76308d1::t_b72b00e426f820 3-6,14,30,32-33,35,39,54,57-67,69,88,90-94
+statewide/shared/locale.lua
+  s_ef6c7ce76308d1::t_4181caaf9bb217 2-3,13-16,23-24,36-37,40,44-45,47-48,95-114,118-120,137-138,157-158,160-184,186-191,194-195,204,206,213,219-226,231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c767f9f38fe126f4835dc5a5af33c7bf62ab772",
+  "prompts": {},
+  "sessions": {
+    "s_ef6c7ce76308d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "83193e1a-ea69-4ea6-991f-e15fb9ce8986",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DrMxrcy <drmxrcy@gmail.com>"
+    }
+  }
+}
