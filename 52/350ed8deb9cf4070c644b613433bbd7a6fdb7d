@@ -1,0 +1,147 @@
+.github/workflows/ci.yml
+  s_c40993e412d830::t_a44ccb1186da72 1-70
+.github/workflows/release.yml
+  s_c40993e412d830::t_cd0faf526e877d 1-53
+.gitignore
+  s_c40993e412d830::t_4380c05d8b458f 1-2
+CHANGELOG.md
+  s_c40993e412d830::t_0cf383a43da28c 1-137
+CONTRIBUTING.md
+  s_c40993e412d830::t_19f2374193025b 1-16
+LICENSE
+  s_c40993e412d830::t_b0868519c9b089 1-21
+README.md
+  s_c40993e412d830::t_5a35400684845f 1-74
+scripts/check-tag.sh
+  s_c40993e412d830::t_06874c8197dccc 1-22
+scripts/package.sh
+  s_c40993e412d830::t_c5b2ad7f64072c 1-16
+statewide/LICENSE
+  s_c40993e412d830::t_655aeaf219e8e5 1-21
+statewide/README.md
+  s_c40993e412d830::t_3b8a92a42c130b 1-651
+statewide/client/callhud.lua
+  s_c40993e412d830::t_a81454de298073 1-76
+statewide/client/citation.lua
+  s_c40993e412d830::t_677b7adf15e599 1-30
+statewide/client/idcard.lua
+  s_c40993e412d830::t_8f09f71c9a5664 1-68
+statewide/client/main.lua
+  s_c40993e412d830::t_3dab6182f9b50b 1-157
+statewide/client/notify.lua
+  s_c40993e412d830::t_2d2e1b2ef05d15 1-15
+statewide/client/scenemarkers.lua
+  s_c40993e412d830::t_b98fd8451b3d56 1-37
+statewide/client/tablet.lua
+  s_c40993e412d830::t_a2b0eedeaa52f8 1-146
+statewide/fxmanifest.lua
+  s_c40993e412d830::t_9abfb4f813c240 1-84
+statewide/lib/pure.lua
+  s_c40993e412d830::t_78fc640a7acc80 1-2046
+statewide/modules/ers/client.lua
+  s_c40993e412d830::t_06b11dda8698d8 1-16
+statewide/modules/ers/map.lua
+  s_c40993e412d830::t_d3a6a5e802c1ad 1-268
+statewide/modules/ers/server.lua
+  s_c40993e412d830::t_234a00f95071df 1-452
+statewide/nui/callhud.css
+  s_c40993e412d830::t_c5f79dff024714 1-166
+statewide/nui/callhud.js
+  s_c40993e412d830::t_50068630603a10 1-130
+statewide/nui/card-grit.svg
+  s_c40993e412d830::t_774196b8e91f84 1
+statewide/nui/card-guilloche.svg
+  s_c40993e412d830::t_56868c5dd2ea24 1
+statewide/nui/card-holo.svg
+  s_c40993e412d830::t_000a81e63ee09a 1
+statewide/nui/card-land.svg
+  s_c40993e412d830::t_db7696e69ab480 1
+statewide/nui/card-star.svg
+  s_c40993e412d830::t_f848ccb378a55a 1
+statewide/nui/card.js
+  s_c40993e412d830::t_fb038f86ba48b9 1-73
+statewide/nui/citation.css
+  s_c40993e412d830::t_c174c6460478c3 1-167
+statewide/nui/citation.js
+  s_c40993e412d830::t_39ea23983fb134 1-173
+statewide/nui/fonts-OFL.txt
+  s_c40993e412d830::t_7fa795b2ad38d1 1-290
+statewide/nui/frame.js
+  s_c40993e412d830::t_56a392460efb4a 1-82
+statewide/nui/idcard.css
+  s_c40993e412d830::t_a98b08fb68fe84 1-84
+statewide/nui/idcard.js
+  s_c40993e412d830::t_eb15d011fffe88 1-38
+statewide/nui/index.html
+  s_c40993e412d830::t_9155fd83f200ec 1-51
+statewide/nui/licence-card.css
+  s_c40993e412d830::t_0d28199eb2df17 1-121
+statewide/nui/licence-card.js
+  s_c40993e412d830::t_8273bf21b46885 1-211
+statewide/nui/rect.js
+  s_c40993e412d830::t_3f0a2a5ddcd269 1-17
+statewide/nui/tablet.css
+  s_c40993e412d830::t_4e4f100f9a18f8 1-163
+statewide/nui/tablet.js
+  s_c40993e412d830::t_3ebeea0114d849 1-222
+statewide/server/arrival.lua
+  s_c40993e412d830::t_488f7d53436446 1-53
+statewide/server/callhud.lua
+  s_c40993e412d830::t_72ff291f4d5d45 1-339
+statewide/server/citations.lua
+  s_c40993e412d830::t_c220bf868d6f2c 1-173
+statewide/server/commands.lua
+  s_c40993e412d830::t_43fe13a68f8d7b 1-605
+statewide/server/events.lua
+  s_c40993e412d830::t_c476764b6f6dc9 1-197
+statewide/server/exports.lua
+  s_c40993e412d830::t_e7afd9499ade89 1-28
+statewide/server/http.lua
+  s_c40993e412d830::t_ffcf2d64a7c26a 1-191
+statewide/server/idcard.lua
+  s_c40993e412d830::t_48fbde35ed7ded 1-132
+statewide/server/identity.lua
+  s_c40993e412d830::t_bd516f6d6e561a 1-92
+statewide/server/lifecycle.lua
+  s_c40993e412d830::t_e4738883601ff1 1-96
+statewide/server/locations.lua
+  s_c40993e412d830::t_076d6ade46d382 1-185
+statewide/server/modules.lua
+  s_c40993e412d830::t_754c3b8c261cf8 1-77
+statewide/server/notify.lua
+  s_c40993e412d830::t_b9a671d4a69229 1-30
+statewide/server/scenemarkers.lua
+  s_c40993e412d830::t_4ed9034738f6c7 1-119
+statewide/server/script911.lua
+  s_c40993e412d830::t_741bfa27a69c53 1-49
+statewide/server/state.lua
+  s_c40993e412d830::t_41f86270ce1d1a 1-511
+statewide/server/status.lua
+  s_c40993e412d830::t_978541a9566d82 1-27
+statewide/server/tablet.lua
+  s_c40993e412d830::t_0bacfe6de3db88 1-26
+statewide/server/vehicles.lua
+  s_c40993e412d830::t_606ee992a57de3 1-919
+statewide/shared/config.lua
+  s_c40993e412d830::t_a797887cc4e318 1-95
+statewide/shared/locale.lua
+  s_c40993e412d830::t_fd55f1a5bbde79 1-260
+statewide/shared/paint.lua
+  s_c40993e412d830::t_d8479e4b28cbac 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52350ed8deb9cf4070c644b613433bbd7a6fdb7d",
+  "prompts": {},
+  "sessions": {
+    "s_c40993e412d830": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e291b66-16b9-4d09-9677-be1cddd7525d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DrMxrcy <drmxrcy@gmail.com>"
+    }
+  }
+}
