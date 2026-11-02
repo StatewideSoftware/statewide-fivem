@@ -1,0 +1,163 @@
+:root {
+  --background: #10131a;
+  --card: #15181f;
+  --muted: #1e222a;
+  --border: #292d36;
+  --foreground: #e9eaee;
+  --muted-foreground: #9b9fa9;
+  --ring: #2aa7e8;
+  --panic: #e5484d;
+  --destructive-text: #ff6166;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font: 13px/1.4 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.tablet {
+  color-scheme: dark;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+.tablet .title {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+button {
+  height: 18px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--muted);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--border);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--background);
+  transform-origin: 0 0;
+}
+
+.tablet.moving iframe {
+  pointer-events: none;
+}
+
+.tablet .status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.loading {
+  color: var(--muted-foreground);
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.error {
+  width: 100%;
+  max-width: 440px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--card);
+}
+
+.error .code {
+  margin: 0 0 4px;
+  color: var(--destructive-text);
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.error h1 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.error p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  touch-action: none;
+  border-right: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}

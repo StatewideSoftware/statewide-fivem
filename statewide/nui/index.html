@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Statewide tablet</title>
+    <link rel="stylesheet" href="tablet.css" />
+    <link rel="stylesheet" href="licence-card.css" />
+    <link rel="stylesheet" href="idcard.css" />
+    <link rel="stylesheet" href="citation.css" />
+    <link rel="stylesheet" href="callhud.css" />
+    <script type="module" src="tablet.js"></script>
+    <script type="module" src="idcard.js"></script>
+    <script type="module" src="citation.js"></script>
+    <script type="module" src="callhud.js"></script>
+  </head>
+  <body>
+    <section id="tablet" class="tablet" role="dialog" aria-labelledby="tablet-title" hidden>
+      <header id="bar" class="bar">
+        <span id="tablet-title" class="title">MDT</span>
+        <span class="actions">
+          <button type="button" id="smaller" aria-label="Smaller text" title="Smaller text">A-</button>
+          <button type="button" id="larger" aria-label="Larger text" title="Larger text">A+</button>
+          <button type="button" id="reset">Reset</button>
+          <button type="button" id="close">Close</button>
+        </span>
+      </header>
+      <div class="body">
+        <iframe
+          id="frame"
+          title="MDT"
+          referrerpolicy="no-referrer"
+          allow="autoplay"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"
+          hidden
+        ></iframe>
+        <div id="status" class="status" role="status">
+          <p id="loading" class="loading">Signing in to the CAD...</p>
+          <div id="error" class="error" role="alert" hidden>
+            <p class="code" id="error-code"></p>
+            <h1 id="error-title"></h1>
+            <p id="error-next"></p>
+          </div>
+        </div>
+      </div>
+      <div id="grip" class="grip" aria-hidden="true"></div>
+    </section>
+    <aside id="callhud" class="callhud" aria-live="polite" hidden></aside>
+    <article id="idcard" class="idcard" aria-live="polite" hidden></article>
+    <section id="citation" class="citation" role="dialog" aria-label="Citation" hidden></section>
+  </body>
+</html>

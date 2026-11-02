@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install Lua 5.4
+        run: sudo apt-get update && sudo apt-get install -y lua5.4=5.4.6-3build2 zip
+
+      - name: Syntax check
+        run: find statewide -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+
+      - name: API key stays on the server
+        run: |
+          if grep -rn statewide_api_key statewide/client statewide/shared statewide/lib statewide/nui; then
+            echo "statewide_api_key must only be read in statewide/server" >&2
+            exit 1
+          fi
+          if grep -rnE "setr[[:space:]]+statewide_api_key|SetConvarReplicated" statewide; then
+            echo "the API key must never be replicated" >&2
+            exit 1
+          fi
+
+      - name: Tag matches manifest
+        run: bash scripts/check-tag.sh "$GITHUB_REF_NAME"
+
+      - name: Package
+        run: bash scripts/package.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Release notes
+        run: |
+          awk -v h="## ${GITHUB_REF_NAME#v}" '$0 == h { p = 1; next } /^## / { p = 0 } p' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+            echo "CHANGELOG.md has no section ## ${GITHUB_REF_NAME#v}" >&2
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "statewide-${GITHUB_REF_NAME#v}.zip" --title "statewide ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag

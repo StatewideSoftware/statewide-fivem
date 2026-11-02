@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lua:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install Lua 5.4
+        run: sudo apt-get update && sudo apt-get install -y lua5.4=5.4.6-3build2
+
+      - name: Syntax check
+        run: find statewide -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
+
+      - name: API key stays on the server
+        run: |
+          if grep -rn statewide_api_key statewide/client statewide/shared statewide/lib statewide/nui; then
+            echo "statewide_api_key must only be read in statewide/server" >&2
+            exit 1
+          fi
+          if grep -rnE "setr[[:space:]]+statewide_api_key|SetConvarReplicated" statewide; then
+            echo "the API key must never be replicated" >&2
+            exit 1
+          fi
+
+      - name: Manifest version
+        run: bash scripts/check-tag.sh "v$(sed -n "s/^version '\(.*\)'$/\1/p" statewide/fxmanifest.lua)"
+
+  actions-pinned:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Every action is pinned to a commit SHA
+        run: |
+          if grep -rnE '^[[:space:]]*(-[[:space:]]+)?uses:' .github/workflows | grep -vE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)'; then
+            echo "pin every action to a full commit SHA" >&2
+            exit 1
+          fi
+
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gitleaks.tar.gz" https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+
+      - name: Scan history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code 1 .'

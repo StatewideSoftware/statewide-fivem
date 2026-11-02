@@ -1,0 +1,166 @@
+.callhud {
+  --p1: #e5484d;
+  --p2: #ffb224;
+  --p3: #d7dde5;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, "Courier New", monospace;
+  color-scheme: dark;
+  position: fixed;
+  top: 28vh;
+  right: 24px;
+  width: 300px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.callhud .mono,
+.callhud kbd {
+  font-family: var(--mono);
+}
+
+.callhud kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.ch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.ch-near {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ch-near + .ch-current,
+.ch-current + .ch-near {
+  border-top: 1px solid var(--border);
+}
+
+.ch-near .ch-nature {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ch-current {
+  padding: 6px 8px 8px;
+  border-left: 2px solid var(--stripe, var(--pri, var(--border)));
+}
+
+.ch-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ch-current .ch-number {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ch-pri {
+  padding: 0 4px;
+  border: 1px solid var(--pri, var(--border));
+  border-radius: 2px;
+  color: var(--pri, var(--foreground));
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ch-state {
+  margin-left: auto;
+  color: var(--ring);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.ch-current .ch-nature {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ch-location {
+  color: var(--muted-foreground);
+}
+
+.ch-details {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.ch-desc {
+  margin: 0 0 4px;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.ch-units {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  color: var(--muted-foreground);
+}
+
+.ch-units .mono {
+  color: var(--foreground);
+}
+
+.ch-keys {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+
+.ch-keys span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.callhud [data-pri="1"] {
+  --pri: var(--p1);
+}
+
+.callhud [data-pri="2"] {
+  --pri: var(--p2);
+}
+
+.callhud [data-pri="3"] {
+  --pri: var(--p3);
+  --stripe: var(--border);
+}
