@@ -1,0 +1,123 @@
+.github/workflows/ci.yml
+  s_9fcbea9815afa7::t_49a65616e51cbe 36-87
+CHANGELOG.md
+  s_9fcbea9815afa7::t_69fbdb0481fb54 5-35
+statewide/README.md
+  s_9fcbea9815afa7::t_da29720e4e7656 15-16,18-21,24-25,28-30,76-84,92,99-100,126,184,193,201,229,231-233,243-253,272,313-344,383-403,477-671,681-683,686-688,694-697,715-719,738-862,866-867,874,878,881-883,1025,1046,1069-1075
+statewide/client/alpr.lua
+  s_9fcbea9815afa7::t_55ff7cbdb1131a 1-10
+statewide/client/main.lua
+  s_9fcbea9815afa7::t_d707a53dcece75 90,134
+statewide/client/registration.lua
+  s_9fcbea9815afa7::t_dbcff71ae7c0d6 1-40
+statewide/fxmanifest.lua
+  s_9fcbea9815afa7::t_256f628628d259 6,26-27,29,35,40-41,44-45,47-57,69,71,73-75,108-119
+statewide/lib/pure.lua
+  s_9fcbea9815afa7::t_6af3e224159dbf 274-282,634,648-660,691-695,866-867,889-918,941-942,999-1025,1077,1394,1402-1409,1412-1422,1620-1623,1630,1644-1661,2130,2172-3256
+statewide/modules/c7fw/server.lua
+  s_9fcbea9815afa7::t_9679b6156d16ab 1-76
+statewide/modules/ers/server.lua
+  s_9fcbea9815afa7::t_d37cac65f92504 230-231
+statewide/modules/lbphone/pure.lua
+  s_9fcbea9815afa7::t_5ddb7067101082 1-132
+statewide/modules/lbphone/server.lua
+  s_9fcbea9815afa7::t_ac705a6e269c9c 1-308
+statewide/modules/mrpd/map.lua
+  s_9fcbea9815afa7::t_73beee853eeefd 1-345
+statewide/modules/mrpd/server.lua
+  s_9fcbea9815afa7::t_8db9e671d02468 1-298
+statewide/modules/mrpd/statewide_adapter.lua
+  s_9fcbea9815afa7::t_d9fa1b1496214e 1-124
+statewide/modules/mugshot/client.lua
+  s_9fcbea9815afa7::t_301d9242543350 1-62
+statewide/modules/mugshot/server.lua
+  s_9fcbea9815afa7::t_c475d789b095c2 1-104
+statewide/modules/nat/server.lua
+  s_9fcbea9815afa7::t_1e1eeca4115b9b 1-116
+statewide/modules/phoneapp/client.lua
+  s_9fcbea9815afa7::t_4583e6ef24ec23 1-98
+statewide/modules/phoneapp/server.lua
+  s_9fcbea9815afa7::t_470ae129cf8b5d 1-205
+statewide/modules/phoneapp/ui/app.css
+  s_9fcbea9815afa7::t_f1087f6fcad221 1-389
+statewide/modules/phoneapp/ui/app.js
+  s_9fcbea9815afa7::t_5c2e2355ed898f 1-516
+statewide/modules/phoneapp/ui/index.html
+  s_9fcbea9815afa7::t_e53d0a09097ffb 1-25
+statewide/modules/phoneapp/ui/phone.js
+  s_9fcbea9815afa7::t_dba5dce3f88a34 1-53
+statewide/modules/tradio/pure.lua
+  s_9fcbea9815afa7::t_19d1f42cc2756f 1-242
+statewide/modules/tradio/server.lua
+  s_9fcbea9815afa7::t_8b5211d7e424cf 1-447
+statewide/modules/witness/client.lua
+  s_9fcbea9815afa7::t_7cf90f36d1b674 1-80
+statewide/modules/witness/server.lua
+  s_9fcbea9815afa7::t_d9167c7d61d52b 1-290
+statewide/modules/wraith/server.lua
+  s_9fcbea9815afa7::t_61264ba685a749 1-302
+statewide/nui/alpr.js
+  s_9fcbea9815afa7::t_7a2240f38e861c 1-11
+statewide/nui/frame.js
+  s_9fcbea9815afa7::t_2da0e1a40a8039 1,8,20-23
+statewide/nui/index.html
+  s_9fcbea9815afa7::t_70a82ad9c0669c 15
+statewide/nui/tablet.js
+  s_9fcbea9815afa7::t_bb12918b9b1156 2,168-170
+statewide/nui/tokens.css
+  s_9fcbea9815afa7::t_6351693016b6bf 1-57
+statewide/server/actions.lua
+  s_9fcbea9815afa7::t_4f0aabd57cda4a 1-72
+statewide/server/callers.lua
+  s_9fcbea9815afa7::t_e7c8c7efaf530e 1-41
+statewide/server/clockin.lua
+  s_9fcbea9815afa7::t_5e59a296dc3e29 1-179
+statewide/server/commands.lua
+  s_9fcbea9815afa7::t_322e4d0a139037 15-22,78-79,152,154-157,164-170,188,205-206,355,360,411,437,440-441,446,545,556
+statewide/server/events.lua
+  s_9fcbea9815afa7::t_574d9367ad2bfa 54-61,80-101,165,167-170,175-185
+statewide/server/exports.lua
+  s_9fcbea9815afa7::t_2d82a6bdad186c 16-19,33-36
+statewide/server/framework.lua
+  s_9fcbea9815afa7::t_6277a44778c911 1-322
+statewide/server/lifecycle.lua
+  s_9fcbea9815afa7::t_382afadeb7aee0 1-9,16,19-37,43,81,84,87
+statewide/server/locations.lua
+  s_9fcbea9815afa7::t_0c98b8586cc7a5 7,76,111-135,140-154,162-164,223
+statewide/server/modules.lua
+  s_9fcbea9815afa7::t_485992b6175968 5-13,17,45
+statewide/server/notify.lua
+  s_9fcbea9815afa7::t_83e82692526d1a 8-9,12-34,39-44
+statewide/server/registration.lua
+  s_9fcbea9815afa7::t_7c66a7af27a987 1-131
+statewide/server/script911.lua
+  s_9fcbea9815afa7::t_28a05b6ebbc214 38-44
+statewide/server/state.lua
+  s_9fcbea9815afa7::t_c66dbbab7460c2 355-360,364-365,367-370,389-394,396-403,509-510
+statewide/server/tablet.lua
+  s_9fcbea9815afa7::t_e17533301f5b2a 6
+statewide/shared/config.lua
+  s_9fcbea9815afa7::t_888a7bae6b48b2 35-37,39,44,48-73,100,121-146,152-194
+statewide/shared/locale.lua
+  s_9fcbea9815afa7::t_2a8b589a51ee28 42-43,68-71,97-98,107-108,111,234-235,241-254,276-331
+statewide/sync/adapter.lua
+  s_9fcbea9815afa7::t_806f8c48eb6947 1-193
+statewide/sync/standalone.lua
+  s_9fcbea9815afa7::t_7737d5d4fbfcbe 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "650eb804cbf684bc7fea384cdc7110a074ed796a",
+  "prompts": {},
+  "sessions": {
+    "s_9fcbea9815afa7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b56ff8c6-bfbb-4180-8381-c27ad286883c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "DrMxrcy <drmxrcy@gmail.com>"
+    }
+  }
+}
