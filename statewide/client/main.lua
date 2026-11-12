@@ -87,7 +87,7 @@ local function callBlip(p)
   SetBlipFlashes(blip, true)
   SetBlipAsShortRange(blip, false)
   BeginTextCommandSetBlipName('STRING')
-  AddTextComponentSubstringPlayerName('911 ' .. tostring(p.number or ''))
+  AddTextComponentSubstringPlayerName(Pure.shown('911 ' .. tostring(p.number or '')))
   EndTextCommandSetBlipName(blip)
   SetTimeout(Config.blips.seconds * 1000, function()
     if DoesBlipExist(blip) then RemoveBlip(blip) end
@@ -131,7 +131,7 @@ RegisterNetEvent('statewide:client:attached', function(p)
 end)
 
 RegisterNetEvent('statewide:client:waypoint', function(p)
-  if type(p) ~= 'table' or not Pure.validCoords(p) then return end
+  if type(p) ~= 'table' or not Pure.validWaypoint(p.x, p.y) then return end
   SetNewWaypoint(p.x + 0.0, p.y + 0.0)
   Notify.show(L('push_waypoint', type(p.label) == 'string' and p.label:sub(1, 40) or ''), 'info')
 end)

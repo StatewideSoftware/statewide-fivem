@@ -227,7 +227,8 @@ local function pullover(src, _, vehicleData)
   local plate = type(vehicleData) == 'table' and ErsMap.plate(vehicleData.license_plate) or nil
   local before = p.unit.callNumber
   local startedAt = os.time()
-  local res = api('POST', '/calls/traffic-stop', 'calls', { body = Pure.withPlayer(account, Pure.trafficStopBody(nil, plate, Locations.fetchLabels(src), State.readCoords(src))), as = account })
+  local res = api('POST', '/calls/traffic-stop', 'calls', { body = Pure.withPlayer(account, Pure.trafficStopBody(nil, plate, Locations.fetchLabels(src),
+      State.readCoords(src))), as = account })
   if res.status ~= 201 then
     if Pure.outcomeUnknown(res) then s.stopUnsure = unsure(before, startedAt) end
     return Notify.problem(src, res)

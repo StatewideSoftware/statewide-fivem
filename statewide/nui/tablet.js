@@ -1,5 +1,5 @@
 import { clampRect, defaultRect } from "./rect.js";
-import { EXPIRED, HIDDEN, LOAD_TIMEOUT_MS, READY, RESUME, RESUME_TIMEOUT_MS, isCloseKey, isFrameMessage, isGameMessage, isSignInUrl, keepMs, startScale, stepScale, tokenMessage } from "./frame.js";
+import { EXPIRED, HIDDEN, LOAD_TIMEOUT_MS, MUGSHOT, READY, RESUME, RESUME_TIMEOUT_MS, isCloseKey, isFrameMessage, isGameMessage, isSignInUrl, keepMs, mugshotSsn, startScale, stepScale, tokenMessage } from "./frame.js";
 
 const resource = typeof window.GetParentResourceName === "function" ? window.GetParentResourceName() : "statewide";
 const $ = (id) => document.getElementById(id);
@@ -165,6 +165,9 @@ window.addEventListener("message", (e) => {
     } else if (isFrameMessage(e.data, e.origin, expectedOrigin, EXPIRED)) {
       if (tablet.hidden) stopFrame();
       else requestCode();
+    } else if (live && isFrameMessage(e.data, e.origin, expectedOrigin, MUGSHOT)) {
+      const ssn = mugshotSsn(e.data);
+      if (ssn) post("mugshot", { ssn });
     }
     return;
   }

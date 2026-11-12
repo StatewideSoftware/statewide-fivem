@@ -2,6 +2,37 @@
 
 Downloads for every version are on the [releases page](https://github.com/StatewideSoftware/statewide-fivem/releases).
 
+## 1.3.0
+
+- New `/clockin [department]` and `/clockout` clock you in for duty time without a unit in the CAD. Name the department
+  when you hold seats in more than one. The time shows in the department's duty reports, and a unit you sign on during
+  it is not counted twice. A department that signs units on with a clock-in also signs you on with your roster
+  callsign. Leaving the server clocks you out at once. `Config.clockIn.jobs` maps framework jobs to departments, so a
+  QBCore, Qbox or ESX duty toggle clocks the player in and out. The new `isClockedIn` export reports it.
+- The server checks for a newer release on start and every 6 hours, through the same CAD `/health` call and no other
+  host. When one is out it prints one console line with the version, its date and the download link, and prints again
+  only for a newer release or after a restart. Nothing is downloaded or replaced. The API keys page in the CAD shows
+  "Update available" beside a key whose server runs an older version.
+- Street labels drop every hidden formatting character and blank space the CAD refuses, so one player's label can no
+  longer hold up location updates for everyone. If the CAD still refuses part of a location batch, only that player's
+  labels are left out and the other units' positions are stored. The console line for a refused batch prints at most
+  once a minute and never shows label text.
+- Bystanders call 911 about shots fired, crashes and reckless driving they see; the CAD drops reports the server can't
+  back up.
+- A civilian who gets into an unregistered car of their own is asked to register it. Communities can make it a
+  requirement.
+- With LB Phone, players text 911, add notes to their call, get replies from dispatch and share their location; officers
+  get call alerts on their phone.
+- The Statewide app for LB Phone: civilian and on-duty tabs, live 911 status, status changes, panic, and plate and name
+  lookups for members with lookup access.
+- Map it: send a call's location to your own in-game map as a waypoint.
+- With Wraith ARS 2X, the plate reader warns on-duty officers about stolen, wanted, BOLO and unregistered plates, and a
+  plate lock shows the full return.
+- NAT Framework V2 servers sync characters and duty with the CAD.
+- Officers can take a booking photo in game that lands on the character and the arrest (needs screenshot-basic).
+- The tablet no longer times out the first time it opens on a cold server.
+- Calls sent by other resources show their SCRIPT tag, and their map blip sits at the coordinates they sent.
+
 ## 1.2.0
 
 - The release zip now includes the `modules` folder with the Night ERS integration, which the 1.1.0 zip left out.

@@ -35,7 +35,13 @@ exports('create911', function(data, cb)
   local cfg = Config.scriptCalls or {}
   if not Pure.useCooldown(cooldowns, resource, now(), cfg.cooldown or 60) then return refuse(resource, 'cooldown') end
   CreateThread(function()
-    local res = Commands.post911(body)
+    if coords then Events.expectCaller(true) end
+    local sent, res = pcall(Commands.post911, body)
+    if coords then
+      if sent and res.status == 201 and res.data and res.data.number then Events.rememberCaller(res.data.number, coords) end
+      Events.expectCaller(false)
+    end
+    if not sent then error(res, 0) end
     if res.status == 201 and res.data and res.data.number then
       local done, err = pcall(Commands.after911, nil, res, body.location, body.description, 'script', coords)
       if not done then print(('^3[statewide] create911 notify error: %s^7'):format(tostring(err))) end

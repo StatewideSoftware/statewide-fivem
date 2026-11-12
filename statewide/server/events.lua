@@ -51,6 +51,14 @@ function Events.rememberCaller(number, coords)
   if number and coords then callers[number] = { coords = coords, at = GetGameTimer() } end
 end
 
+local expecting = 0
+local CALLER_WAIT_STEPS = 40
+local CALLER_WAIT_STEP_MS = 50
+
+function Events.expectCaller(on)
+  expecting = math.max(0, expecting + (on and 1 or -1))
+end
+
 function Events.awaitUnits(number, src)
   local account = Identity.getAccount(src)
   if not number or not account then return end
@@ -69,6 +77,28 @@ local function handle(ev)
   local route = Pure.EVENT_ROUTES[ev.type]
   if not route or type(ev.payload) ~= 'table' then return end
   if route.markers then return SceneMarkers and SceneMarkers.apply(ev) end
+  if route.plates then return Wraith and Wraith.flagsChanged(ev.payload) end
+  if route.signal then return TriggerEvent(route.event, State.copy(ev.payload), ev.type == 'signal.declared') end
+  if ev.type == 'unit.panic_cleared' then
+    TriggerEvent(route.event, State.copy(ev.payload))
+    forEachMember(ev.payload, function(src, p)
+      if p.unit then
+        p.unit.isPanic = false
+        State.touch(src)
+      end
+    end)
+    return State.broadcastSoon()
+  end
+  if route.quiet then return TriggerEvent(route.event, State.copy(ev.payload)) end
+  if route.waypoint then
+    local src = Pure.waypointTarget(ev.payload, State.connected())
+    if not src then return end
+    local p = ev.payload
+    local push = Pure.waypointPush({ number = p.callNumber, x = p.x, y = p.y, postal = p.postal })
+    if push then TriggerClientEvent('statewide:client:waypoint', src, push) end
+    return
+  end
+  if route.aop then return Lifecycle.setAop(ev.payload.name) end
   if route.settings then
     if not State.setIsolation(ev.payload.agencyIsolation) then return end
     return CreateThread(function()
@@ -132,18 +162,27 @@ local function handle(ev)
     for _, dst in ipairs(recipients) do Notify.push(dst, route.push, Pure.panicPushFor(push, ref, State.viewer(dst), State.isolation())) end
     return
   elseif ev.type == 'call.911' then
+    local number = ev.payload.number
     local at = Pure.callCoords(ev.payload)
-    if at then
-      callers[ev.payload.number] = nil
-      if Config.blips.call911 then push.coords = at end
+    local caller = callers[number]
+    if at and (caller or expecting == 0) then
+      callers[number] = nil
+      if Config.blips.call911 then push.coords = caller and caller.coords or at end
       for _, dst in ipairs(recipients) do Notify.push(dst, route.push, push) end
       return
     end
     return CreateThread(function()
-      Wait(250)
-      local caller = callers[ev.payload.number]
-      callers[ev.payload.number] = nil
-      if caller and Config.blips.call911 then push.coords = caller.coords end
+      if at then
+        for _ = 1, CALLER_WAIT_STEPS do
+          if callers[number] or expecting == 0 then break end
+          Wait(CALLER_WAIT_STEP_MS)
+        end
+      else
+        Wait(250)
+      end
+      local late = callers[number]
+      callers[number] = nil
+      if Config.blips.call911 then push.coords = late and late.coords or at end
       for _, dst in ipairs(Pure.selectRecipients(ev.type, ev.payload, State.onDuty())) do Notify.push(dst, route.push, push) end
     end)
   end

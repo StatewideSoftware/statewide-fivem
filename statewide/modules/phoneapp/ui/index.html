@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" class="sw-tokens" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Statewide</title>
+    <link rel="stylesheet" href="../../../nui/tokens.css" />
+    <link rel="stylesheet" href="app.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="head">
+        <h1 id="title" class="title">Statewide</h1>
+        <div id="mode" class="mode" role="tablist" aria-label="Mode" hidden>
+          <button type="button" role="tab" id="mode-civ" data-mode="civ" aria-selected="true">Civilian</button>
+          <button type="button" role="tab" id="mode-duty" data-mode="duty" aria-selected="false">On duty</button>
+        </div>
+      </header>
+      <main id="main" class="main" tabindex="-1"></main>
+      <nav id="tabs" class="tabs" aria-label="Sections"></nav>
+      <p id="live" class="sr" role="status" aria-live="polite"></p>
+    </div>
+  </body>
+</html>

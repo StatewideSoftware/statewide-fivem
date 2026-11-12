@@ -352,11 +352,22 @@ function State.setIsolation(mode)
   return true
 end
 
+local unitListeners = {}
+
+function State.onUnitChange(cb)
+  unitListeners[#unitListeners + 1] = cb
+end
+
 function State.setUnit(src, unit)
   if unit and unit.status and unit.status.meaning == 'off_duty' then unit = nil end
   local p = State.get(src)
-  local was = p.unit ~= nil
+  local before = p.unit
+  local was = before ~= nil
   p.unit = unit
+  for _, cb in ipairs(unitListeners) do
+    local ok, err = pcall(cb, tonumber(src), unit, before)
+    if not ok then print(('^1[statewide] unit change: %s^7'):format(err)) end
+  end
   State.noteDuty(p.discordId, unit ~= nil)
   State.touch(src)
   mirror(tonumber(src), unit)
@@ -375,8 +386,21 @@ function State.setUnit(src, unit)
   if CallHud then CallHud.unitChanged(src) end
 end
 
+local characterListeners = {}
+
+function State.onCharacterChange(cb)
+  characterListeners[#characterListeners + 1] = cb
+end
+
 function State.setCharacter(src, character)
-  State.get(src).character = character
+  local p = State.get(src)
+  local before = p.character
+  p.character = character
+  if (before and before.id) == (character and character.id) then return end
+  for _, cb in ipairs(characterListeners) do
+    local ok, err = pcall(cb, tonumber(src), character, before)
+    if not ok then print(('^1[statewide] character change: %s^7'):format(err)) end
+  end
 end
 
 local function readopt(account, unit)
@@ -482,7 +506,8 @@ end
 function State.onDuty()
   local out = {}
   for src, p in pairs(players) do
-    if p.unit then out[#out + 1] = { src = src, discordId = p.unit.discordId or p.discordId, membershipId = p.unit.membershipId or p.membershipId, deptType = p.unit.department and p.unit.department.type } end
+    if p.unit then out[#out + 1] = { src = src, discordId = p.unit.discordId or p.discordId, membershipId = p.unit.membershipId or p.membershipId,
+        deptType = p.unit.department and p.unit.department.type } end
   end
   table.sort(out, function(a, b) return a.src < b.src end)
   return out

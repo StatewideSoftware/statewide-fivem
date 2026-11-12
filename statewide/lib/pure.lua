@@ -271,6 +271,15 @@ function Pure.versionLessThan(a, b)
   return false
 end
 
+function Pure.updateNotice(running, health, announced)
+  local latest = type(health) == 'table' and health.latestResourceVersion or nil
+  if type(latest) ~= 'string' or latest == announced then return nil end
+  if not Pure.versionLessThan(running, latest) then return nil end
+  local released = type(health.latestResourceDate) == 'string' and (' (released %s)'):format(health.latestResourceDate) or ''
+  local link = type(health.latestResourceUrl) == 'string' and (': %s'):format(health.latestResourceUrl) or ''
+  return ('^3[statewide] version %s%s is out and this server runs %s%s^7'):format(latest, released, running, link), latest
+end
+
 function Pure.selectRecipients(kind, payload, onDuty)
   local out = {}
   local function pick(fn)
@@ -622,7 +631,7 @@ end
 
 local INVISIBLE = {
   { 0x0, 0x1f }, { 0x7f, 0x9f }, { 0xad, 0xad }, { 0x34f, 0x34f }, { 0x600, 0x605 }, { 0x61c, 0x61c }, { 0x6dd, 0x6dd },
-  { 0x70f, 0x70f }, { 0x8e2, 0x8e2 }, { 0x115f, 0x1160 }, { 0x17b4, 0x17b5 }, { 0x180b, 0x180f }, { 0x200b, 0x200f },
+  { 0x70f, 0x70f }, { 0x890, 0x891 }, { 0x8e2, 0x8e2 }, { 0x115f, 0x1160 }, { 0x17b4, 0x17b5 }, { 0x180b, 0x180f }, { 0x200b, 0x200f },
   { 0x2028, 0x202e }, { 0x2060, 0x206f }, { 0x3164, 0x3164 }, { 0xfe00, 0xfe0f }, { 0xfeff, 0xfeff }, { 0xffa0, 0xffa0 },
   { 0xfff9, 0xfffb }, { 0x110bd, 0x110bd }, { 0x110cd, 0x110cd }, { 0x13430, 0x1343f }, { 0x1bca0, 0x1bca3 },
   { 0x1d173, 0x1d17a }, { 0xe0000, 0xe007f }, { 0xe0100, 0xe01ef },
@@ -631,6 +640,19 @@ local INVISIBLE = {
 local function invisible(cp)
   for i = 1, #INVISIBLE do
     local r = INVISIBLE[i]
+    if cp >= r[1] and cp <= r[2] then return true end
+  end
+  return false
+end
+
+local BLANK = {
+  { 0x9, 0xd }, { 0x20, 0x20 }, { 0xa0, 0xa0 }, { 0x1680, 0x1680 }, { 0x2000, 0x200a }, { 0x2028, 0x2029 },
+  { 0x202f, 0x202f }, { 0x205f, 0x205f }, { 0x3000, 0x3000 }, { 0xfeff, 0xfeff },
+}
+
+local function blank(cp)
+  for i = 1, #BLANK do
+    local r = BLANK[i]
     if cp >= r[1] and cp <= r[2] then return true end
   end
   return false
@@ -666,9 +688,11 @@ function Pure.clean(s, max)
   for _, cp in ipairs(codepoints(s)) do
     if not invisible(cp) then kept[#kept + 1] = cp end
   end
-  local text = utf8.char(table.unpack(kept)):gsub('^%s+', ''):gsub('%s+$', '')
-  if text == '' then return nil end
-  return (cut(codepoints(text), max))
+  local first, last = 1, #kept
+  while first <= last and blank(kept[first]) do first = first + 1 end
+  while last >= first and blank(kept[last]) do last = last - 1 end
+  if first > last then return nil end
+  return (cut(table.move(kept, first, last, 1, {}), max))
 end
 
 function Pure.truncate(s, max)
@@ -839,7 +863,8 @@ end
 function Pure.panicBody(active, labels, serverPostal, coords)
   if not active then return { active = false } end
   local pos = Pure.position(coords)
-  return { active = true, location = Pure.locationText(labels), postal = Pure.preferPostal(serverPostal, labels), x = pos and pos.x, y = pos and pos.y, zoneCode = labels and labels.zone }
+  return { active = true, location = Pure.locationText(labels), postal = Pure.preferPostal(serverPostal, labels), x = pos and pos.x, y = pos and pos.y,
+      zoneCode = labels and labels.zone }
 end
 
 Pure.MAX_SLOTS = 2048
@@ -859,6 +884,36 @@ function Pure.heartbeatPayload(players, maxPlayers, online)
   local body = { players = math.max(0, math.min(max, math.floor(tonumber(players) or 0))), maxPlayers = max }
   if online == false then body.online = false end
   return body
+end
+
+function Pure.clockInArgs(args)
+  local department = args and args[1]
+  if type(department) ~= 'string' or department == '' then return nil end
+  return department
+end
+
+function Pure.frameworkDuty(jobs, jobName, onDuty)
+  if onDuty ~= true or type(jobs) ~= 'table' or type(jobName) ~= 'string' then return nil end
+  local department = jobs[jobName]
+  if type(department) ~= 'string' or department == '' then return nil end
+  return department
+end
+
+function Pure.clockInReportSeconds(cfg)
+  local s = tonumber(type(cfg) == 'table' and cfg.reportSeconds) or 60
+  return math.min(180, math.max(30, math.floor(s)))
+end
+
+Pure.CLOCK_IN_FRAMEWORKS = { qbx_core = true, ['qb-core'] = true, es_extended = true }
+
+function Pure.clockedIn(answer, slots)
+  local out = {}
+  if type(answer) ~= 'table' or type(answer.clockedIn) ~= 'table' then return out end
+  for _, e in ipairs(answer.clockedIn) do
+    local src = type(e) == 'table' and slots[e.discordId or e.license]
+    if src and type(e.department) == 'string' then out[src] = e.department end
+  end
+  return out
 end
 
 function Pure.dutyArgs(args)
@@ -883,7 +938,8 @@ end
 
 function Pure.trafficStopBody(discordId, plate, labels, coords, occupants)
   local pos = Pure.position(coords)
-  return { discordId = discordId, plate = plate, occupants = occupants, location = placeOf(Pure.locationText(labels)), postal = labels and labels.postal, x = pos and pos.x, y = pos and pos.y, zoneCode = labels and labels.zone }
+  return { discordId = discordId, plate = plate, occupants = occupants, location = placeOf(Pure.locationText(labels)), postal = labels and labels.postal,
+      x = pos and pos.x, y = pos and pos.y, zoneCode = labels and labels.zone }
 end
 
 function Pure.outcomeUnknown(res)
@@ -940,6 +996,33 @@ function Pure.trackingArg(arg, hidden)
   return nil
 end
 
+local LABEL_FIELDS = { location = true, postal = true, zoneCode = true }
+local LEGACY_FIELDS = { [''] = true, movement = true, speed = true }
+
+function Pure.locationRefusals(body)
+  local out = { labels = {}, drop = {}, legacy = false }
+  local any = false
+  for path in (type(body) == 'string' and body or ''):gmatch('"path"%s*:%s*"([^"]*)"') do
+    any = true
+    local index, field = path:match('^units%.(%d+)%.?([%w_]*)$')
+    index = tonumber(index)
+    if not index or LEGACY_FIELDS[field] then
+      out.legacy = true
+    elseif LABEL_FIELDS[field] then
+      out.labels[index + 1] = true
+    else
+      out.drop[index + 1] = true
+    end
+  end
+  if not any then out.legacy = true end
+  return out
+end
+
+function Pure.labelsKey(labels)
+  if not labels then return nil end
+  return table.concat({ labels.street or '', labels.crossStreet or '', labels.postal or '', labels.zone or '' }, '\n')
+end
+
 function Pure.retryable(status)
   return status == 0 or status == 429 or status >= 500
 end
@@ -991,6 +1074,7 @@ function Pure.confirmLanded(template, window, unit, call, me)
     if type(body) ~= 'table' or type(body.code) ~= 'string' or type(status) ~= 'table' then return nil end
     local typed = body.code:match('^%s*(.-)%s*$'):upper()
     if type(status.code) == 'string' and typed == status.code:upper() then return 'late_done' end
+    if type(status.label) == 'string' and typed ~= '' and typed == status.label:match('^%s*(.-)%s*$'):upper() then return 'late_done' end
     local meaning = Pure.TEN_CODE_MEANINGS[typed]
     if meaning and meaning == status.meaning then return 'late_done' end
   end
@@ -1307,6 +1391,7 @@ Pure.EVENT_ROUTES = {
   ['unit.signed_on'] = { refresh = true },
   ['unit.signed_off'] = { refresh = true },
   ['community.settings'] = { settings = true },
+  ['community.aop_changed'] = { aop = true },
   ['ers.offer'] = { event = 'statewide:ersOffer' },
   ['call.unit_detached'] = { event = 'statewide:detached', queue = true },
   ['call.event'] = { event = 'statewide:callNote', queue = true },
@@ -1314,7 +1399,26 @@ Pure.EVENT_ROUTES = {
   ['scene_marker.set'] = { markers = true },
   ['scene_marker.cleared'] = { markers = true },
   ['character.active_changed'] = { refresh = true },
+  ['unit.waypoint'] = { waypoint = true },
+  ['plate.flags_changed'] = { plates = true },
+  ['unit.panic_cleared'] = { event = 'statewide:panicCleared' },
+  ['call.priority_created'] = { event = 'statewide:priorityCall', quiet = true },
+  ['signal.declared'] = { event = 'statewide:signal', signal = true },
+  ['signal.cleared'] = { event = 'statewide:signal', signal = true },
+  ['call.opened'] = { event = 'statewide:callOpened', quiet = true },
+  ['call.caller_message'] = { event = 'statewide:callerMessage', quiet = true },
 }
+
+Pure.AOP_MAX = 80
+
+function Pure.aopName(v)
+  if type(v) ~= 'string' then return nil end
+  local name = v:gsub('^%s+', ''):gsub('%s+$', '')
+  if name == '' then return nil end
+  local n = utf8.len(name)
+  if not n or n > Pure.AOP_MAX then return nil end
+  return name
+end
 
 Pure.PUSH_WINDOW_MS = 1500
 Pure.PUSH_NOTES_MAX = 3
@@ -1513,13 +1617,17 @@ function Pure.validUtf8(line)
   return table.concat(out)
 end
 
+function Pure.shown(value)
+  return (Pure.validUtf8(tostring(value or '')):gsub('[~<>]', ''))
+end
+
 function Pure.feedText(line)
   return Pure.chatText(line, Pure.FEED_MAX)
 end
 
 function Pure.chatText(line, max)
   max = max or Pure.CHAT_MAX
-  line = Pure.validUtf8(line)
+  line = Pure.shown(line)
   if #line <= max then return line end
   local head = line:sub(1, max - 3)
   local at = head:match('^.*()[,%s]')
@@ -1531,6 +1639,24 @@ end
 function Pure.callCoords(p)
   if type(p) ~= 'table' or not Pure.validCoords({ x = p.x, y = p.y }) then return nil end
   return { x = p.x, y = p.y }
+end
+
+function Pure.validWaypoint(x, y)
+  return Pure.validCoords({ x = x, y = y })
+end
+
+function Pure.waypointTarget(p, players)
+  if type(p) ~= 'table' or type(players) ~= 'table' then return nil end
+  if type(p.discordId) ~= 'string' or p.discordId == '' then return nil end
+  if not Pure.isCallNumber(p.callNumber) or not Pure.validWaypoint(p.x, p.y) then return nil end
+  local found
+  for i = 1, #players do
+    if players[i].discordId == p.discordId then
+      if found then return nil end
+      found = players[i].src
+    end
+  end
+  return found
 end
 
 function Pure.waypointPush(p)
@@ -2001,7 +2127,7 @@ function Pure.sceneMarkersVisible(cfg, unit)
 end
 
 function Pure.sceneBlipName(m)
-  return m.label or Pure.SCENE_MARKER_KINDS[m.kind].name
+  return Pure.shown(m.label or Pure.SCENE_MARKER_KINDS[m.kind].name)
 end
 
 function Pure.sceneBlipKey(m)
@@ -2041,6 +2167,1091 @@ end
 
 function Pure.isSceneMarkerId(id)
   return markerId(id)
+end
+
+Pure.REG_TTL = 600
+
+function Pure.regMode(cfg)
+  if type(cfg) ~= 'table' or cfg.mode == nil then return 'prompt' end
+  local mode = cfg.mode
+  if mode == 'prompt' or mode == 'enforce' then return mode end
+  return 'off'
+end
+
+function Pure.regPlate(value)
+  if type(value) ~= 'string' then return nil end
+  local plate = value:gsub('^%s+', ''):gsub('%s+$', ''):upper()
+  if plate == '' or #plate > 8 then return nil end
+  return plate
+end
+
+function Pure.regModelSet(names, hash)
+  local out = {}
+  for _, name in ipairs(names or {}) do
+    local h = type(name) == 'string' and u32(hash(name))
+    if h then out[h] = true end
+  end
+  return out
+end
+
+function Pure.regSkip(cfg, v)
+  if v.unit then return 'on_duty' end
+  if not v.vehicle or v.vehicle == 0 then return 'no_vehicle' end
+  if not v.driver then return 'not_driver' end
+  for _, kind in ipairs(cfg.skipPopulation or {}) do
+    if kind == v.population then return 'ambient' end
+  end
+  local model = u32(v.model)
+  if model and v.skipModels and v.skipModels[model] then return 'model' end
+  if not Pure.regPlate(v.plate) then return 'no_plate' end
+  return nil
+end
+
+function Pure.regNew()
+  return { cache = {}, prompted = {}, since = {}, pending = {}, lastSignal = {} }
+end
+
+function Pure.regKey(ssn, plate)
+  return tostring(ssn) .. ':' .. plate
+end
+
+function Pure.regGet(state, key, now)
+  local hit = state.cache[key]
+  if not hit then return nil end
+  if now - hit.at >= Pure.REG_TTL then
+    state.cache[key] = nil
+    return nil
+  end
+  return hit.registered
+end
+
+function Pure.regPut(state, key, registered, now)
+  state.cache[key] = { registered = registered == true, at = now }
+end
+
+function Pure.regPutProfile(state, ssn, plate, vehicles, now)
+  local found = false
+  for _, v in ipairs(vehicles or {}) do
+    local p = Pure.regPlate(v.plate)
+    if p then
+      Pure.regPut(state, Pure.regKey(ssn, p), true, now)
+      if p == plate then found = true end
+    end
+  end
+  Pure.regPut(state, Pure.regKey(ssn, plate), found, now)
+  return found
+end
+
+function Pure.regForget(state, ssn, plate)
+  state.cache[Pure.regKey(ssn, plate)] = nil
+  state.since[Pure.regKey(ssn, plate)] = nil
+end
+
+function Pure.regFirstPrompt(state, key)
+  if state.prompted[key] then return false end
+  state.prompted[key] = true
+  return true
+end
+
+function Pure.regGrace(state, key, now, seconds)
+  local first = state.since[key]
+  if not first then
+    state.since[key] = now
+    first = now
+  end
+  return now - first >= (tonumber(seconds) or 0)
+end
+
+function Pure.regSignalReady(state, src, now, gap)
+  local ok = Pure.cooldown(state.lastSignal[src], now, gap)
+  if ok then state.lastSignal[src] = now end
+  return ok
+end
+
+function Pure.regGated(cfg, name)
+  for _, n in ipairs(cfg.gated or {}) do
+    if n == name then return true end
+  end
+  return false
+end
+
+function Pure.regDrop(state, src)
+  state.lastSignal[src] = nil
+end
+
+Pure.PLATE_MAX = 8
+Pure.ALPR_FLAGS = { 'stolen', 'ownerWarrant', 'bolo', 'registration', 'insurance', 'notRegistered' }
+Pure.ALPR_SOUNDS = {
+  stolen = 'alpr-stolen', ownerWarrant = 'alpr-warrant', bolo = 'alpr-bolo',
+  registration = 'alpr-registration', insurance = 'alpr-insurance', notRegistered = 'alpr-registration',
+}
+Pure.ALPR_CAMS = { front = true, rear = true }
+local PLATE_PLACEHOLDERS = { ['NO PLATE'] = true, NOPLATE = true, NONE = true, ['NO TAG'] = true, NOTAG = true }
+local ALPR_RANK = {}
+for i, f in ipairs(Pure.ALPR_FLAGS) do ALPR_RANK[f] = i end
+
+function Pure.normalizePlate(raw)
+  if type(raw) ~= 'string' then return nil end
+  local plate = raw:match('^%s*(.-)%s*$'):upper()
+  if plate == '' or #plate > Pure.PLATE_MAX or plate:find('[^A-Z0-9 ]') then return nil end
+  if PLATE_PLACEHOLDERS[plate] or PLATE_PLACEHOLDERS[plate:gsub(' ', '')] then return nil end
+  return plate
+end
+
+function Pure.plateKey(plate)
+  local p = Pure.normalizePlate(plate)
+  if not p then return nil end
+  p = p:gsub(' ', '')
+  return p
+end
+
+function Pure.alprCam(cam)
+  return type(cam) == 'string' and Pure.ALPR_CAMS[cam] == true
+end
+
+function Pure.alprFlags(entry, alertOn, now)
+  if type(entry) ~= 'table' or type(entry.flags) ~= 'table' or type(alertOn) ~= 'table' then return {} end
+  if now and type(entry.expiresAt) == 'number' and entry.expiresAt <= now then return {} end
+  local present = {}
+  for _, f in ipairs(entry.flags) do
+    if ALPR_RANK[f] and alertOn[f] == true then present[f] = true end
+  end
+  local out = {}
+  for _, f in ipairs(Pure.ALPR_FLAGS) do
+    if present[f] then out[#out + 1] = f end
+  end
+  return out
+end
+
+function Pure.alprSeverity(flags)
+  local top
+  for _, f in ipairs(type(flags) == 'table' and flags or {}) do
+    if ALPR_RANK[f] and (not top or ALPR_RANK[f] < ALPR_RANK[top]) then top = f end
+  end
+  return top, top and Pure.ALPR_SOUNDS[top] or nil
+end
+
+function Pure.alprSignature(flags)
+  local list = {}
+  for _, f in ipairs(type(flags) == 'table' and flags or {}) do list[#list + 1] = tostring(f) end
+  table.sort(list)
+  return table.concat(list, ',')
+end
+
+function Pure.dedupKey(netId, plate)
+  local id = tonumber(netId)
+  local key = Pure.plateKey(plate)
+  if not id or id ~= id // 1 or id <= 0 or not key then return nil end
+  return ('%d:%s'):format(id, key)
+end
+
+function Pure.windowAllow(store, now, limit, seconds)
+  if type(store) ~= 'table' or type(limit) ~= 'number' or limit < 1 then return false end
+  if not store.start or now - store.start >= seconds then store.start, store.n = now, 0 end
+  if store.n >= limit then return false end
+  store.n = store.n + 1
+  return true
+end
+
+function Pure.callerKey(number)
+  if type(number) == 'number' then number = tostring(math.tointeger(number) or number) end
+  if type(number) ~= 'string' then return nil end
+  local digits = number:gsub('%D', '')
+  if digits == '' then return nil end
+  return 'phone:' .. digits
+end
+
+function Pure.callerWindowOpen(last, now, seconds)
+  return type(last) == 'number' and now - last < seconds
+end
+
+function Pure.isServerSource(src)
+  return src == '' or src == 0
+end
+
+Pure.ALPR_ALERT_COOLDOWN = 300
+
+function Pure.shouldAlert(last, now, flags, seconds)
+  if type(flags) ~= 'table' or #flags == 0 then return false end
+  if type(last) ~= 'table' or type(last.at) ~= 'number' then return true end
+  if last.signature ~= Pure.alprSignature(flags) then return true end
+  return now - last.at >= (seconds or Pure.ALPR_ALERT_COOLDOWN)
+end
+
+function Pure.canAutoLock(camState, plate)
+  if type(camState) ~= 'table' or camState.locked == true then return false end
+  local want, seen = Pure.plateKey(plate), Pure.plateKey(camState.plate)
+  return want ~= nil and want == seen
+end
+
+function Pure.alprText(cam, plate, flags, words)
+  words = words or {}
+  local names = {}
+  for _, f in ipairs(flags or {}) do names[#names + 1] = words[f] or f:upper() end
+  return ('%s ALPR %s: %s'):format(words[cam] or tostring(cam):upper(), plate, table.concat(names, ', '))
+end
+
+Pure.ALPR_CRITICAL = { stolen = true, ownerWarrant = true, bolo = true }
+Pure.ALPR_ALERT_TEXT_MAX = 80
+Pure.ALPR_ALERT_LINES_MAX = 6
+
+function Pure.radarNative(version)
+  return type(version) == 'string' and version:find('%-statewide%.%d+$') ~= nil
+end
+
+local function finite(v)
+  return type(v) == 'number' and v == v and v ~= math.huge and v ~= -math.huge
+end
+
+local function wholeIn(v, low, high)
+  return finite(v) and v % 1 == 0 and v >= low and v <= high
+end
+
+local function radarPoint(c)
+  local kind = type(c)
+  local x, y, z
+  if kind == 'table' then
+    x, y, z = rawget(c, 'x'), rawget(c, 'y'), rawget(c, 'z')
+  elseif kind == 'vector3' then
+    x, y, z = c.x, c.y, c.z
+  else
+    return nil
+  end
+  if not (finite(x) and finite(y) and finite(z)) then return nil end
+  return { x = x, y = y, z = z }
+end
+
+function Pure.radarInfo(info)
+  if type(info) ~= 'table' then return nil end
+  local out = {}
+  local v, class, netId, model = rawget(info, 'v'), rawget(info, 'class'), rawget(info, 'netId'), rawget(info, 'model')
+  if wholeIn(v, 1, 1000) then out.v = math.tointeger(v) end
+  if wholeIn(class, 0, 22) then out.class = math.tointeger(class) end
+  if wholeIn(netId, 1, 2147483647) then out.netId = math.tointeger(netId) end
+  if wholeIn(model, -2147483648, 4294967295) then out.model = math.tointeger(model) end
+  out.coords = radarPoint(rawget(info, 'coords'))
+  out.plate = Pure.normalizePlate(rawget(info, 'plate'))
+  return out
+end
+
+function Pure.alprAlertSeverity(flags)
+  local level = 'info'
+  for _, f in ipairs(type(flags) == 'table' and flags or {}) do
+    if Pure.ALPR_CRITICAL[f] then return 'critical' end
+    if ALPR_RANK[f] then level = 'warning' end
+  end
+  return level
+end
+
+local function alertText(s)
+  s = tostring(s)
+  local max = Pure.ALPR_ALERT_TEXT_MAX
+  if not utf8.len(s) then return s:sub(1, max) end
+  local stop = utf8.offset(s, max + 1)
+  return stop and s:sub(1, stop - 1) or s
+end
+
+function Pure.alprAlert(cam, plate, flags, words)
+  words = words or {}
+  local names = {}
+  for _, f in ipairs(type(flags) == 'table' and flags or {}) do
+    if ALPR_RANK[f] then names[#names + 1] = alertText(words[f] or f:upper()) end
+  end
+  if #names == 0 then return nil end
+  local lines = {}
+  for i = 2, math.min(#names, Pure.ALPR_ALERT_LINES_MAX + 1) do lines[#lines + 1] = names[i] end
+  return {
+    cam = Pure.alprCam(cam) and cam or nil,
+    plate = alertText(plate),
+    title = names[1],
+    lines = lines,
+    severity = Pure.alprAlertSeverity(flags),
+  }
+end
+
+function Pure.flaggedEntry(row)
+  if type(row) ~= 'table' then return nil end
+  local key = Pure.plateKey(row.plate)
+  if not key or type(row.flags) ~= 'table' then return nil end
+  local flags = {}
+  for _, f in ipairs(row.flags) do
+    if ALPR_RANK[f] then flags[#flags + 1] = f end
+  end
+  return key, { flags = flags, expiresAt = Pure.isoSeconds(row.expiresAt) }
+end
+
+Pure.PHONE_LIST_MAX = 25
+Pure.PHONE_NOTES_MAX = 10
+Pure.PHONE_TEXT_MAX = 200
+Pure.PHONE_NAME_MAX = 40
+Pure.PHONE_PLATE_MAX = 8
+Pure.PHONE_CODE_MAX = 20
+
+local function phoneSsn(v)
+  if type(v) ~= 'string' or #v > 11 then return nil end
+  local ssn = v:gsub('-', '')
+  return ssn:match('^%d%d%d%d%d%d%d%d%d$') and ssn or nil
+end
+
+local function phoneWord(max)
+  return function(v)
+    if type(v) ~= 'string' or #v > max * 4 then return nil end
+    local cleaned = Pure.clean(v, max + 1)
+    if not cleaned or unitCount(codepoints(cleaned)) > max then return nil end
+    return cleaned
+  end
+end
+
+Pure.PHONE_ACTIONS = {
+  me = {},
+  characters = {},
+  setActive = { args = { ssn = phoneSsn } },
+  profile = { args = { ssn = phoneSsn } },
+  my911 = {},
+  call = { officer = true },
+  statusCodes = { officer = true },
+  status = { officer = true, args = { code = phoneWord(Pure.PHONE_CODE_MAX) } },
+  panic = { officer = true, urgent = true },
+  plate = { officer = true, args = { plate = phoneWord(Pure.PHONE_PLATE_MAX) } },
+  name = { officer = true, args = { first = phoneWord(Pure.PHONE_NAME_MAX), last = phoneWord(Pure.PHONE_NAME_MAX) } },
+}
+
+function Pure.validatePhoneAction(action, args)
+  if type(action) ~= 'string' or #action > 32 then return nil, 'unknown_action' end
+  local spec = Pure.PHONE_ACTIONS[action]
+  if not spec then return nil, 'unknown_action' end
+  if args == nil then args = {} end
+  if type(args) ~= 'table' then return nil, 'bad_args' end
+  local fields = spec.args or {}
+  local n = 0
+  for k in pairs(args) do
+    n = n + 1
+    if n > 4 or type(k) ~= 'string' or not fields[k] then return nil, 'bad_args' end
+  end
+  local out = {}
+  for k, check in pairs(fields) do
+    local v = check(args[k])
+    if v == nil then return nil, 'bad_args' end
+    out[k] = v
+  end
+  return out, spec
+end
+
+local function phoneText(v, max)
+  if type(v) ~= 'string' then return nil end
+  return Pure.clean(v, max or Pure.PHONE_TEXT_MAX)
+end
+
+local function phoneNumber(v)
+  return math.type(v) == 'integer' and v or (type(v) == 'number' and math.floor(v)) or 0
+end
+
+local function phoneName(c)
+  return phoneText(table.concat({ phoneText(c.firstName, Pure.PHONE_NAME_MAX) or '', phoneText(c.lastName, Pure.PHONE_NAME_MAX) or '' }, ' ')) or '?'
+end
+
+function Pure.phoneViewCharacters(characters)
+  local out = {}
+  if type(characters) ~= 'table' then return out end
+  for i = 1, math.min(#characters, Pure.PHONE_LIST_MAX) do
+    local c = characters[i]
+    local ssn = type(c) == 'table' and phoneSsn(c.ssn)
+    if ssn then
+      out[#out + 1] = { ssn = ssn, name = phoneName(c), dob = phoneText(c.dob, 10), status = phoneText(c.status, 20), active = c.isActive == true }
+    end
+  end
+  return out
+end
+
+local function eachOf(list, fn)
+  local out = {}
+  if type(list) ~= 'table' then return out end
+  for i = 1, math.min(#list, Pure.PHONE_LIST_MAX) do
+    local v = type(list[i]) == 'table' and fn(list[i])
+    if v then out[#out + 1] = v end
+  end
+  return out
+end
+
+function Pure.phoneViewProfile(profile)
+  if type(profile) ~= 'table' or type(profile.character) ~= 'table' then return nil end
+  local c = profile.character
+  local ssn = phoneSsn(c.ssn)
+  if not ssn then return nil end
+  return {
+    character = { ssn = ssn, name = phoneName(c), dob = phoneText(c.dob, 10), active = c.isActive == true },
+    vehicles = eachOf(profile.vehicles, function(v)
+      return {
+        plate = phoneText(v.plate, 16) or '?', make = phoneText(v.make, 40), model = phoneText(v.model, 40), color = phoneText(v.color, 40),
+        registration = phoneText(v.registrationStatus, 20), insurance = phoneText(v.insuranceStatus, 20), stolen = v.stolen == true,
+      }
+    end),
+    licenses = eachOf(profile.licenses, function(l)
+      return {
+        name = phoneText(l.name, 60) or phoneText(l.type, 20) or '?', number = phoneText(l.number, 30), status = phoneText(l.status, 20),
+        expiresOn = phoneText(l.expiresOn, 10), points = phoneNumber(l.points),
+      }
+    end),
+    citations = eachOf(profile.citations, function(t)
+      return {
+        number = phoneText(t.number, 20) or '?', date = phoneText(t.occurredAt, 10), fine = phoneNumber(t.fineTotal), points = phoneNumber(t.points),
+        courtDate = phoneText(t.courtDate, 10), courtLocation = phoneText(t.courtLocation, 80), plea = phoneText(t.plea, 20), caseStatus = phoneText(t.caseStatus, 20),
+      }
+    end),
+  }
+end
+
+function Pure.phoneView911(calls)
+  return eachOf(calls, function(c)
+    if not Pure.isCallNumber(c.number) then return nil end
+    return { number = c.number, status = phoneText(c.status, 20), units = phoneNumber(c.unitCount) }
+  end)
+end
+
+function Pure.phoneViewCall(detail)
+  if type(detail) ~= 'table' or type(detail.call) ~= 'table' or not Pure.isCallNumber(detail.call.number) then return nil end
+  local call = detail.call
+  local notes = {}
+  local list = type(detail.notes) == 'table' and detail.notes or {}
+  for i = #list, math.max(1, #list - Pure.PHONE_NOTES_MAX + 1), -1 do
+    local n = list[i]
+    local body = type(n) == 'table' and phoneText(n.body)
+    if body then notes[#notes + 1] = { author = phoneText(n.author, 40), body = body, at = phoneText(n.at, 20) } end
+  end
+  return {
+    number = call.number, nature = phoneText(call.nature, 80), location = phoneText(call.location, Pure.LOCATION_MAX),
+    postal = phoneText(call.postal, 10), status = phoneText(call.status, 20), priority = phoneNumber(call.priority), notes = notes,
+  }
+end
+
+function Pure.phoneViewStatusCodes(codes)
+  return eachOf(codes, function(c)
+    local code = phoneText(c.code, Pure.PHONE_CODE_MAX)
+    if not code then return nil end
+    return { code = code, label = phoneText(c.label, 40) or code, meaning = phoneText(c.meaning, 20) }
+  end)
+end
+
+function Pure.phoneViewUnit(unit)
+  if type(unit) ~= 'table' then return nil end
+  local status = type(unit.status) == 'table' and unit.status or {}
+  local dep = type(unit.department) == 'table' and unit.department or {}
+  return {
+    callsign = phoneText(unit.callsign, 20), department = phoneText(dep.abbreviation, 20), status = phoneText(status.code, 20),
+    statusLabel = phoneText(status.label, 40), callNumber = Pure.isCallNumber(unit.callNumber) and unit.callNumber or nil, panic = unit.isPanic == true,
+  }
+end
+
+function Pure.phoneUnitKey(view)
+  if type(view) ~= 'table' then return 'off' end
+  local parts = {}
+  for _, k in ipairs({ 'callsign', 'department', 'status', 'statusLabel', 'callNumber' }) do parts[#parts + 1] = tostring(view[k] or '') end
+  parts[#parts + 1] = view.panic and '1' or '0'
+  return table.concat(parts, '\31')
+end
+
+function Pure.phoneResult(messages, data)
+  local ok = true
+  local out = {}
+  for i = 1, math.min(#messages, 6) do
+    local m = messages[i]
+    if m.kind == 'error' then ok = false end
+    out[#out + 1] = { text = phoneText(m.text, 400) or '', kind = m.kind }
+  end
+  return { ok = ok, messages = out, data = data }
+end
+
+Pure.WITNESS_KINDS = { 'shots', 'crash', 'reckless', 'wreck' }
+Pure.WITNESS_INCIDENT_MAX = 128
+
+function Pure.witnessKind(v)
+  if type(v) ~= 'string' then return nil end
+  for i = 1, #Pure.WITNESS_KINDS do
+    if Pure.WITNESS_KINDS[i] == v then return v end
+  end
+  return nil
+end
+
+function Pure.witnessChance(chance, roll)
+  chance = tonumber(chance) or 0
+  if chance <= 0 then return false end
+  if chance >= 100 then return true end
+  return roll <= chance
+end
+
+function Pure.witnessWindow(store, now, max, seconds)
+  local n = 0
+  for i = 1, #store do
+    if now - store[i] < seconds then
+      n = n + 1
+      store[n] = store[i]
+    end
+  end
+  for i = #store, n + 1, -1 do store[i] = nil end
+  if n >= (max or 0) then return false end
+  store[n + 1] = now
+  return true
+end
+
+function Pure.witnessIncident(store, kind, x, y, now, radius, seconds)
+  local n = 0
+  for i = 1, #store do
+    local e = store[i]
+    if now - e.at < seconds then
+      n = n + 1
+      store[n] = e
+    end
+  end
+  for i = #store, n + 1, -1 do store[i] = nil end
+  local r2 = radius * radius
+  for i = 1, n do
+    local e = store[i]
+    local dx, dy = e.x - x, e.y - y
+    if e.kind == kind and dx * dx + dy * dy <= r2 then return false end
+  end
+  if n >= Pure.WITNESS_INCIDENT_MAX then
+    table.remove(store, 1)
+    n = n - 1
+  end
+  store[n + 1] = { kind = kind, x = x, y = y, at = now }
+  return true
+end
+
+function Pure.inQuietZone(zones, x, y)
+  if type(zones) ~= 'table' then return false end
+  for _, z in ipairs(zones) do
+    if type(z) == 'table' and type(z.x) == 'number' and type(z.y) == 'number' and type(z.radius) == 'number' then
+      local dx, dy = z.x - x, z.y - y
+      if dx * dx + dy * dy <= z.radius * z.radius then return true end
+    end
+  end
+  return false
+end
+
+function Pure.ambientPed(populationType)
+  return type(populationType) == 'number' and populationType >= 1 and populationType <= 5
+end
+
+function Pure.partialPlate(plate, n)
+  if type(plate) ~= 'string' then return nil end
+  plate = plate:gsub('^%s+', ''):gsub('%s+$', ''):upper()
+  if #plate <= n or not plate:match('^[%w]+$') then return nil end
+  return plate:sub(1, n)
+end
+
+function Pure.witnessVehicle(v, t, showPlate)
+  if type(v) ~= 'table' then return nil end
+  local kind = t.types[v.vtype] or t.types.default or 'vehicle'
+  local out = type(v.color) == 'string' and t.vehicle:format(v.color:lower(), kind) or kind
+  local part = showPlate and Pure.partialPlate(v.plate, 3)
+  if part then out = t.plate:format(out, part) end
+  return out
+end
+
+function Pure.witnessText(template, location, postal, vehicle, t)
+  local place = postal and t.place:format(location, postal) or location
+  local out = template:format(place)
+  if vehicle then out = out .. ' ' .. t.seen:format(vehicle) end
+  return Pure.clean(out, 1000)
+end
+
+function Pure.witness911Body(o)
+  local pos = Pure.position(o.coords)
+  return {
+    description = Pure.clean(o.description, 1000),
+    location = placeOf(o.location),
+    postal = o.postal,
+    anonymous = true,
+    origin = 'witness',
+    x = pos and pos.x,
+    y = pos and pos.y,
+    zoneCode = o.zoneCode,
+  }
+end
+
+function Pure.witnessSample(list, sample, max)
+  list[#list + 1] = sample
+  while #list > max do table.remove(list, 1) end
+end
+
+local function dropped(high, current, damage)
+  return type(high) == 'number' and type(current) == 'number' and high - current >= damage
+end
+
+function Pure.crashSeen(list, now, current, damage, window, minSpeed)
+  if type(list) ~= 'table' or type(current) ~= 'table' then return false end
+  local body, engine, fast
+  minSpeed = tonumber(minSpeed) or 0
+  for i = 1, #list do
+    local s = list[i]
+    if now - s.at <= window then
+      if type(s.body) == 'number' and (not body or s.body > body) then body = s.body end
+      if type(s.engine) == 'number' and (not engine or s.engine > engine) then engine = s.engine end
+      if type(s.speed) == 'number' and s.speed >= minSpeed then fast = true end
+    end
+  end
+  if not fast then return false end
+  return dropped(body, current.body, damage) or dropped(engine, current.engine, damage)
+end
+
+function Pure.sustained(list, now, minSpeed, need, window)
+  if type(list) ~= 'table' then return false end
+  local n = 0
+  for i = 1, #list do
+    local s = list[i]
+    if now - s.at <= window then
+      if s.speed < minSpeed then return false end
+      n = n + 1
+    end
+  end
+  return n >= need
+end
+
+function Pure.corroborated(store, now, need, window)
+  local n = 0
+  for i = 1, #store do
+    if now - store[i] < window then
+      n = n + 1
+      store[n] = store[i]
+    end
+  end
+  for i = #store, n + 1, -1 do store[i] = nil end
+  store[n + 1] = now
+  if n + 1 < need then return false end
+  for i = #store, 1, -1 do store[i] = nil end
+  return true
+end
+
+function Pure.wrecked(engine, body, cfg)
+  return (type(engine) == 'number' and engine <= cfg.engineHealth) or (type(body) == 'number' and body <= cfg.bodyHealth)
+end
+
+Pure.MUGSHOT_MAX_BASE64 = 2796204
+
+function Pure.mugshotMode(setting, state)
+  if setting == false or setting == 'off' then return 'off' end
+  if state ~= 'started' then return 'absent' end
+  return 'on'
+end
+
+function Pure.mugshotTarget(arg)
+  if type(arg) ~= 'string' then return nil end
+  if arg:match('^%d%d%d%d%d%d%d%d%d$') then return { ssn = arg } end
+  local id = arg:match('^%d%d?%d?%d?$')
+  if id and tonumber(id) > 0 then return { id = tonumber(id) } end
+  return nil
+end
+
+function Pure.withinReach(a, b, maxDist, bucketA, bucketB)
+  if type(a) ~= 'table' or type(b) ~= 'table' or bucketA ~= bucketB then return false end
+  local limit = tonumber(maxDist)
+  if not limit or limit <= 0 then return false end
+  local dx, dy, dz = (a.x or 0) - (b.x or 0), (a.y or 0) - (b.y or 0), (a.z or 0) - (b.z or 0)
+  return dx * dx + dy * dy + dz * dz <= limit * limit
+end
+
+function Pure.mugshotOrder(client)
+  if client == 'officer' then return { 'officer' } end
+  return { 'suspect', 'officer' }
+end
+
+function Pure.mugshotQuality(q)
+  q = tonumber(q)
+  if not q or q ~= q then return 0.85 end
+  return math.max(0.5, math.min(0.95, q))
+end
+
+function Pure.mugshotImage(data, maxBase64)
+  if type(data) ~= 'string' then return nil end
+  local b64 = data:match('^data:image/jpeg;base64,(.+)$') or data:match('^data:image/png;base64,(.+)$') or data:match('^data:image/webp;base64,(.+)$')
+  if not b64 or #b64 > (maxBase64 or Pure.MUGSHOT_MAX_BASE64) then return nil end
+  if not b64:match('^[A-Za-z0-9+/]+=?=?$') then return nil end
+  return b64
+end
+
+
+Pure.SYNC_PUSH_MAX = 100
+Pure.SYNC_QUEUE_MAX = 5000
+Pure.SYNC_ENTITIES = { 'characters', 'vehicles', 'licenses' }
+Pure.SYNC_FIELDS = {
+  characters = { 'firstName', 'middleName', 'lastName', 'dob', 'gender', 'heightCm', 'weightKg', 'phone' },
+  vehicles = { 'plate', 'make', 'model', 'color', 'year' },
+  licenses = { 'type', 'class', 'expiresOn' },
+}
+
+function Pure.syncIdent(name)
+  if type(name) ~= 'string' or #name > 64 or not name:match('^[%a_][%w_]*$') then return nil end
+  return name
+end
+
+function Pure.syncColumns(entity, map)
+  local fields = Pure.SYNC_FIELDS[entity]
+  if not fields or type(map) ~= 'table' then return nil, 'unknown entity' end
+  local cols = {}
+  for _, key in ipairs({ 'id', 'owner' }) do
+    if not Pure.syncIdent(map[key]) then return nil, ('%s.%s is not a column name'):format(entity, key) end
+    cols[#cols + 1] = map[key]
+  end
+  for i = 1, #fields do
+    local col = map[fields[i]]
+    if col ~= nil and col ~= false then
+      if not Pure.syncIdent(col) then return nil, ('%s.%s is not a column name'):format(entity, fields[i]) end
+      cols[#cols + 1] = col
+    end
+  end
+  return cols
+end
+
+function Pure.syncSelect(entity, map)
+  local cols, err = Pure.syncColumns(entity, map)
+  if not cols then return nil, err end
+  if not Pure.syncIdent(map.table) then return nil, entity .. '.table is not a table name' end
+  local quoted = {}
+  for i = 1, #cols do quoted[i] = '`' .. cols[i] .. '`' end
+  return ('SELECT %s FROM `%s` ORDER BY `%s` LIMIT ? OFFSET ?'):format(table.concat(quoted, ', '), map.table, map.id)
+end
+
+function Pure.syncOwner(value)
+  if type(value) == 'number' and value == math.floor(value) then value = ('%.0f'):format(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  local discord = value:match('^discord:(%d+)$') or value:match('^(%d+)$')
+  if discord and #discord >= 15 and #discord <= 22 then return { discordId = discord } end
+  local hex = value:match('^license:(%x+)$') or value:match('^char%d+:(%x+)$') or value:match('^(%x+)$')
+  if hex and #hex == 40 then return { license = 'license:' .. hex:lower() } end
+  return nil
+end
+
+function Pure.syncDate(value, order)
+  if type(value) == 'number' then
+    if value ~= value or value < -2208988800000 or value > 32503680000000 then return nil end
+    local s = math.abs(value) >= 100000000000 and value / 1000 or value
+    return os.date('!%Y-%m-%d', math.floor(s))
+  end
+  if type(value) ~= 'string' then return nil end
+  local y, m, d = value:match('^%s*(%d%d%d%d)%-(%d%d?)%-(%d%d?)')
+  if not y then
+    local a, b, c = value:match('^%s*(%d%d?)[/%.%-](%d%d?)[/%.%-](%d%d%d%d)%s*$')
+    if not a then return nil end
+    y = c
+    if order == 'mdy' then m, d = a, b else d, m = a, b end
+  end
+  y, m, d = tonumber(y), tonumber(m), tonumber(d)
+  if m < 1 or m > 12 or d < 1 or d > 31 then return nil end
+  return ('%04d-%02d-%02d'):format(y, m, d)
+end
+
+local function syncText(value, max)
+  if type(value) == 'number' then value = tostring(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  if value == '' then return nil end
+  return value:sub(1, max)
+end
+
+local function syncId(value)
+  if type(value) == 'number' and value == math.floor(value) and value >= 0 then return ('%.0f'):format(value) end
+  local id = syncText(value, 100)
+  if not id or not id:match('^[\33-\126]+$') then return nil end
+  return id
+end
+
+local function syncWhole(value, low, high)
+  value = tonumber(value)
+  if not value or value ~= math.floor(value) or value < low or value > high then return nil end
+  return math.floor(value)
+end
+
+function Pure.syncGender(value, genders)
+  local gender = syncText(value, 40)
+  if not gender then return nil end
+  return (genders or {})[gender:lower()] or gender
+end
+
+function Pure.syncItem(entity, row, map, opts)
+  if type(row) ~= 'table' or type(map) ~= 'table' then return nil, 'invalid' end
+  opts = opts or {}
+  local id = syncId(row[map.id])
+  if not id then return nil, 'no id' end
+  local function col(field)
+    local c = map[field]
+    if c == nil or c == false then return nil end
+    return row[c]
+  end
+  if entity == 'characters' then
+    local owner = Pure.syncOwner(row[map.owner])
+    if not owner then return nil, 'no owner identifier' end
+    local item = {
+      externalId = id,
+      discordId = owner.discordId,
+      license = owner.license,
+      firstName = syncText(col('firstName'), 40),
+      middleName = syncText(col('middleName'), 40),
+      lastName = syncText(col('lastName'), 40),
+      dob = Pure.syncDate(col('dob'), opts.dateOrder),
+      gender = Pure.syncGender(col('gender'), opts.genders),
+      heightCm = syncWhole(col('heightCm'), 50, 250),
+      weightKg = syncWhole(col('weightKg'), 20, 350),
+      phone = syncText(col('phone'), 20),
+    }
+    if not item.firstName or not item.lastName or not item.dob then return nil, 'missing name or date of birth' end
+    return item
+  end
+  local owner = syncId(row[map.owner])
+  if not owner then return nil, 'no owner' end
+  if entity == 'vehicles' then
+    local plate = syncText(col('plate'), 20)
+    local model = syncText(col('model'), 40)
+    if not plate or not model then return nil, 'missing plate or model' end
+    return {
+      externalId = id,
+      ownerExternalId = owner,
+      plate = plate:upper():gsub('%s+', ''),
+      model = model,
+      make = syncText(col('make'), 40),
+      color = syncText(col('color'), 40),
+      year = syncWhole(col('year'), 1900, 2100),
+    }
+  end
+  if entity == 'licenses' then
+    local kind = syncText(col('type'), 60)
+    if not kind then return nil, 'missing type' end
+    return { externalId = id, ownerExternalId = owner, type = kind, class = syncText(col('class'), 10), expiresOn = Pure.syncDate(col('expiresOn'), opts.dateOrder) }
+  end
+  return nil, 'unknown entity'
+end
+
+function Pure.syncQueueNew()
+  local q = {}
+  for i = 1, #Pure.SYNC_ENTITIES do q[Pure.SYNC_ENTITIES[i]] = { order = {}, byId = {}, n = 0 } end
+  return q
+end
+
+function Pure.syncEnqueue(q, entity, item, max)
+  local bucket = q[entity]
+  if not bucket or type(item) ~= 'table' or not item.externalId then return false end
+  if bucket.byId[item.externalId] == nil then
+    if bucket.n >= (max or Pure.SYNC_QUEUE_MAX) then return false end
+    bucket.order[#bucket.order + 1] = item.externalId
+    bucket.n = bucket.n + 1
+  end
+  bucket.byId[item.externalId] = item
+  return true
+end
+
+function Pure.syncTake(q, entity, n)
+  local bucket = q[entity]
+  local items, rest = {}, {}
+  for i = 1, #bucket.order do
+    local id = bucket.order[i]
+    if #items < n then
+      items[#items + 1] = bucket.byId[id]
+      bucket.byId[id] = nil
+    else
+      rest[#rest + 1] = id
+    end
+  end
+  bucket.order, bucket.n = rest, #rest
+  return items
+end
+
+function Pure.syncRequeue(q, entity, items)
+  local bucket = q[entity]
+  local front = {}
+  for i = 1, #items do
+    local id = items[i].externalId
+    if bucket.byId[id] == nil then
+      bucket.byId[id] = items[i]
+      front[#front + 1] = id
+    end
+  end
+  for i = 1, #bucket.order do front[#front + 1] = bucket.order[i] end
+  bucket.order, bucket.n = front, #front
+end
+
+function Pure.syncTransient(status)
+  return status == 0 or status == 429 or status >= 500
+end
+
+function Pure.syncTally(into, results)
+  for i = 1, #(results or {}) do
+    local o = results[i].outcome
+    if type(o) == 'string' then into[o] = (into[o] or 0) + 1 end
+  end
+  return into
+end
+
+
+Pure.FRAMEWORK_REASONS = { not_allowed = true, not_connected = true, no_discord = true, validation = true }
+
+local DAYS_IN_MONTH = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
+
+function Pure.parseDob(value, order, today)
+  local iso = Pure.syncDate(value, order)
+  if not iso then return nil end
+  local y, m, d = iso:match('^(%d+)%-(%d+)%-(%d+)$')
+  y, m, d = tonumber(y), tonumber(m), tonumber(d)
+  local leap = (y % 4 == 0 and y % 100 ~= 0) or y % 400 == 0
+  local max = (m == 2 and leap) and 29 or DAYS_IN_MONTH[m]
+  if y < 1900 or d > max then return nil end
+  if type(today) == 'string' and iso > today then return nil end
+  return iso
+end
+
+local function frameworkName(value)
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  if value == '' or #value > 40 or value:find('[%c<>]') then return nil end
+  return value
+end
+
+local function frameworkId(value)
+  if type(value) == 'number' and value == math.floor(value) and value >= 0 and value < 1e15 then return ('%.0f'):format(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  if #value < 1 or #value > 100 or not value:match('^[\33-\126]+$') then return nil end
+  return value
+end
+
+local function frameworkKey(value)
+  if type(value) == 'number' then value = tostring(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  if value == '' or #value > 60 then return nil end
+  return value
+end
+
+local function frameworkCallsign(value)
+  if type(value) == 'number' then value = tostring(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$'):upper()
+  if value == '' or #value > 12 or not value:match('^[A-Z0-9][A-Z0-9 %-]*$') then return nil end
+  return value
+end
+
+function Pure.frameworkDiscord(value)
+  if type(value) == 'number' and value == math.floor(value) then value = ('%.0f'):format(value) end
+  if type(value) ~= 'string' then return nil end
+  value = value:match('^%s*(.-)%s*$')
+  local d = value:match('^discord:(%d+)$') or value:match('^(%d+)$')
+  if d and #d >= 15 and #d <= 22 then return d end
+  return nil
+end
+
+local function frameworkCharacter(source, id, first, last, dob, gender, departmentKey, callsign, order)
+  local c = {
+    externalSource = source,
+    externalId = frameworkId(id),
+    firstName = frameworkName(first),
+    lastName = frameworkName(last),
+    dob = Pure.parseDob(dob, order),
+    gender = Pure.syncGender(gender, { m = 'Male', f = 'Female', male = 'Male', female = 'Female' }),
+    departmentKey = frameworkKey(departmentKey),
+    callsign = frameworkCallsign(callsign),
+  }
+  if c.gender and #c.gender > 40 then c.gender = nil end
+  if not c.externalId then return nil, 'id' end
+  if not c.firstName or not c.lastName then return nil, 'name' end
+  if not c.dob then return nil, 'dob' end
+  return c
+end
+
+function Pure.normalizeNat(row, order)
+  if type(row) ~= 'table' then return nil, 'row' end
+  return frameworkCharacter('nat', row.id, row.first_name, row.last_name, row.dob, row.gender, row.level, nil, order)
+end
+
+function Pure.normalizeC7(char, order)
+  if type(char) ~= 'table' then return nil, 'character' end
+  local c, why = frameworkCharacter('c7fw', char.char_id, char.char_first_name, char.char_last_name, char.char_dob, char.char_gender, char.char_department,
+      char.char_callsign, order)
+  if not c then return nil, why end
+  c.discordId = Pure.frameworkDiscord(char.char_discord)
+  return c
+end
+
+function Pure.validateFrameworkCharacter(data, resource)
+  if type(data) ~= 'table' or type(resource) ~= 'string' or not resource:match('^[%w_%.%-]+$') or #resource > 60 then return nil, 'validation' end
+  local c = frameworkCharacter('resource:' .. resource, data.id, data.firstName, data.lastName, data.dob, data.gender, nil, nil, nil)
+  if not c then return nil, 'validation' end
+  return c
+end
+
+function Pure.frameworkDutyArgs(data)
+  if type(data) ~= 'table' then return nil end
+  local department = frameworkKey(data.department)
+  if not department then return nil end
+  local callsign = nil
+  if data.callsign ~= nil then
+    callsign = frameworkCallsign(data.callsign)
+    if not callsign then return nil end
+  end
+  return department, callsign
+end
+
+function Pure.mapDepartment(map, key)
+  if key == nil then return 'civilian' end
+  if type(map) ~= 'table' or type(key) ~= 'string' then return nil end
+  local hit = map[key]
+  if hit == nil then
+    local lower = key:lower()
+    for k, v in pairs(map) do
+      if type(k) == 'string' and k:lower() == lower then
+        hit = v
+        break
+      end
+    end
+  end
+  if type(hit) ~= 'string' or hit == '' then return nil end
+  if hit:lower() == 'civilian' then return 'civilian' end
+  return hit
+end
+
+function Pure.frameworkSession(nextChar, map)
+  if nextChar == nil then return nil end
+  local department = Pure.mapDepartment(map, nextChar.departmentKey)
+  if not department then return nil, 'unmapped' end
+  local s = { externalSource = nextChar.externalSource, externalId = nextChar.externalId, character = nextChar }
+  if department == 'civilian' then
+    s.role = 'civilian'
+  else
+    s.role, s.department, s.callsign = 'department', department, nextChar.callsign
+  end
+  return s
+end
+
+local function sameSession(a, b)
+  if a == nil or b == nil then return a == b end
+  if a.role ~= b.role or a.externalSource ~= b.externalSource or a.externalId ~= b.externalId then return false end
+  if a.role == 'department' then return a.department == b.department and a.callsign == b.callsign end
+  local x, y = a.character or {}, b.character or {}
+  return x.firstName == y.firstName and x.lastName == y.lastName and x.dob == y.dob and x.gender == y.gender
+end
+
+function Pure.frameworkTransition(prev, nextChar, map, autoDuty)
+  local nextSession, why = Pure.frameworkSession(nextChar, map)
+  if why == 'unmapped' then return { { kind = 'unmapped', key = nextChar.departmentKey } }, prev end
+  if sameSession(prev, nextSession) then return {}, prev end
+  local actions = {}
+  if prev and prev.signedOn then actions[#actions + 1] = { kind = 'signOff' } end
+  if nextSession == nil then
+    if prev and prev.role == 'civilian' then actions[#actions + 1] = { kind = 'clearCharacter' } end
+    return actions, nil
+  end
+  if nextSession.role == 'civilian' then
+    actions[#actions + 1] = { kind = 'activate', character = nextSession.character }
+    return actions, nextSession
+  end
+  if not (prev and prev.role == 'department') then actions[#actions + 1] = { kind = 'clearCharacter' } end
+  if autoDuty ~= false then actions[#actions + 1] = { kind = 'signOn', department = nextSession.department, callsign = nextSession.callsign } end
+  return actions, nextSession
+end
+
+function Pure.callable(value)
+  if type(value) == 'function' then return true end
+  if type(value) ~= 'table' then return false end
+  local mt = getmetatable(value)
+  return type(mt) == 'table' and mt.__call ~= nil
 end
 
 return Pure

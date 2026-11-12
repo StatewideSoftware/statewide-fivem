@@ -12,6 +12,14 @@ local function now()
   return GetGameTimer() / 1000
 end
 
+function Commands.enter(src)
+  return Pure.gateEnter(gate, src, now(), Config.cooldowns.default or 2)
+end
+
+function Commands.leave(src)
+  Pure.gateLeave(gate, src)
+end
+
 function Commands.cooldown(src, bucket)
   lastUse[src] = lastUse[src] or {}
   local ok, left = Pure.useCooldown(lastUse[src], bucket, now(), Config.cooldowns[bucket])
@@ -67,7 +75,8 @@ function Commands.offDuty(src, account, reason)
 end
 
 function Commands.disconnect(account, priority)
-  local res = api('POST', '/units/{discordId}/connection', 'units', { params = { discordId = Pure.playerSlot(account) }, body = { connected = false }, as = account, priority = priority })
+  local res = api('POST', '/units/{discordId}/connection', 'units', { params = { discordId = Pure.playerSlot(account) }, body = { connected = false }, as = account,
+      priority = priority })
   if (res.status == 200 and res.data and type(res.data.unit) ~= 'table') or (res.problem and res.problem.code == 'not_found') then
     State.release(account.discordId)
   end
@@ -140,19 +149,25 @@ function Commands.reportDrop(account, gone)
   if dropping[slot] == mine then dropping[slot] = nil end
 end
 
-Handlers.duty = function(src, args, name)
-  local department, callsign = Pure.dutyArgs(args)
-  if not department then return Commands.usage(src, 'duty', name) end
-  local account = Identity.require(src)
-  if not account then return end
+function Commands.signOn(src, account, department, callsign)
   local res = api('POST', '/units/duty', 'units', { body = Pure.withPlayer(account, { department = department, callsign = callsign }), as = account })
-  if res.status ~= 201 then return Notify.problem(src, res) end
+  if res.status ~= 201 then
+    Notify.problem(src, res)
+    return res
+  end
   local p = State.get(src)
   p.discordId, p.account, p.membershipId = account.discordId, account, res.data.unit.membershipId
   State.setUnit(src, res.data.unit)
   State.claim(account.discordId)
   Notify.player(src, L('duty_on', res.data.unit.callsign, res.data.unit.department.abbreviation), 'success')
   if Ers then Ers.cadDuty(src, res.data.unit) end
+  return res
+end
+
+Handlers.duty = function(src, args, name)
+  local department, callsign = Pure.dutyArgs(args)
+  if not department then return Commands.usage(src, 'duty', name) end
+  Actions.duty(src, department, callsign)
 end
 
 Handlers.offduty = function(src)
@@ -170,17 +185,7 @@ end
 Handlers.status = function(src, args, name)
   local code = args[1]
   if not code then return Commands.usage(src, 'status', name) end
-  local account = Identity.require(src)
-  if not account then return end
-  local res = api('PATCH', '/units/{discordId}/status', 'units', { params = { discordId = Pure.playerSlot(account) }, body = { code = code }, as = account })
-  if res.status ~= 200 then
-    if res.problem and res.problem.code == 'validation_failed' and res.problem.detail then
-      return Notify.player(src, L('status_unknown', res.problem.detail), 'error')
-    end
-    return Notify.problem(src, res)
-  end
-  State.setUnit(src, res.data.unit)
-  Notify.player(src, L('status_set', res.data.unit.status.code), 'success')
+  Actions.status(src, code)
 end
 
 function Commands.setPanic(src, account, active)
@@ -197,24 +202,8 @@ function Commands.setPanic(src, account, active)
   Notify.player(src, L('panic_on_nocall'), 'alert')
 end
 
-local function panicCommand(src, action)
-  local account = Identity.require(src)
-  if not account then return end
-  local p = State.peek(src)
-  if p and p.unit and (p.unit.isPanic or action == 'clearpanic') then
-    State.refresh(src)
-    p = State.peek(src)
-  end
-  local what = Pure.panicAction(p and p.unit, action)
-  if what == 'off_duty' then return Notify.player(src, L('not_on_duty'), 'error') end
-  if what == 'none' then return Notify.player(src, L('panic_none'), 'info') end
-  if what == 'clear' then return Commands.setPanic(src, account, false) end
-  if not Commands.cooldown(src, 'panic') then return end
-  Commands.setPanic(src, account, true)
-end
-
-Handlers.panic = function(src) panicCommand(src, 'panic') end
-Handlers.clearpanic = function(src) panicCommand(src, 'clearpanic') end
+Handlers.panic = function(src) Actions.panic(src, 'panic') end
+Handlers.clearpanic = function(src) Actions.panic(src, 'clearpanic') end
 
 local function locationOf(src, coords)
   local labels = Locations.fetchLabels(src)
@@ -363,23 +352,12 @@ end
 
 Handlers.plate = function(src, args, name)
   if not args[1] then return Commands.usage(src, 'plate', name) end
-  local account = Identity.require(src)
-  if not account or not Commands.cooldown(src, 'plate') then return end
-  local res = api('GET', '/lookup/vehicle', 'lookup', { query = { discordId = Pure.playerSlot(account), plate = table.concat(args, ' ') }, as = account })
-  if res.status ~= 200 then return Notify.problem(src, res) end
-  local first = res.data.results and res.data.results[1]
-  if not first then return Notify.player(src, L('plate_none'), 'info') end
-  Commands.showVehicle(src, first)
+  Actions.plate(src, table.concat(args, ' '))
 end
 
 Handlers.name = function(src, args, name)
   if not args[1] or not args[2] then return Commands.usage(src, 'name', name) end
-  local account = Identity.require(src)
-  if not account or not Commands.cooldown(src, 'name') then return end
-  local res = api('GET', '/lookup/person', 'lookup', { query = { discordId = Pure.playerSlot(account), first = args[1], last = table.concat(args, ' ', 2) }, as = account })
-  if res.status ~= 200 then return Notify.problem(src, res) end
-  if not res.data.results or #res.data.results == 0 then return Notify.player(src, L('name_none'), 'info') end
-  Notify.player(src, L('name_return', res.data.summary), res.data.hit and 'alert' or 'info')
+  Actions.name(src, args[1], table.concat(args, ' ', 2))
 end
 
 local vehicleAsks = {}
@@ -430,6 +408,7 @@ Handlers.regveh = function(src, args, name)
   local res = api('POST', '/vehicles', 'civilian', { body = Pure.withPlayer(account, body), as = account })
   if res.status ~= 201 then return Notify.problem(src, res) end
   Notify.player(src, L('regveh_done', res.data.vehicle.plate), 'success')
+  return true
 end
 
 function Commands.registerAiVehicle(src, scenario)
@@ -455,22 +434,16 @@ function Commands.registerAiVehicle(src, scenario)
     return Notify.problem(src, res)
   end
   Notify.player(src, L('aiveh_done', res.data.owner.name), 'success')
+  return true
 end
 
-Handlers.regcarjack = function(src) Commands.registerAiVehicle(src, 'carjack') end
-Handlers.regparkedveh = function(src) Commands.registerAiVehicle(src, 'parked') end
+Handlers.regcarjack = function(src) return Commands.registerAiVehicle(src, 'carjack') end
+Handlers.regparkedveh = function(src) return Commands.registerAiVehicle(src, 'parked') end
 
 Handlers.setciv = function(src, args, name)
   local ssn = args[1] and args[1]:gsub('-', '')
   if not ssn or not ssn:match('^%d%d%d%d%d%d%d%d%d$') then return Commands.usage(src, 'setciv', name) end
-  if not Commands.civilian(src) then return end
-  local account = Identity.require(src)
-  if not account then return end
-  local res = api('PUT', '/characters/active', 'civilian', { body = Pure.withPlayer(account, { ssn = ssn }), as = account })
-  if res.status ~= 200 then return Notify.problem(src, res) end
-  local c = res.data.character
-  State.setCharacter(src, { id = c.id, ssn = c.ssn, firstName = c.firstName, lastName = c.lastName, dob = c.dob })
-  Notify.player(src, L('setciv_done', c.firstName, c.lastName), 'success')
+  Actions.setciv(src, ssn)
 end
 
 function Commands.activeCharacter(src)
@@ -569,7 +542,7 @@ function Commands.register()
           if src <= 0 then return end
           local free = Commands.free[c.action]
           if free and free(src) then return end
-          local ok, why, left = Pure.gateEnter(gate, src, now(), Config.cooldowns.default or 2)
+          local ok, why, left = Commands.enter(src)
           if not ok then
             if why == 'cooldown' then Notify.player(src, L('cooldown', left), 'error') end
             if why == 'busy' then Notify.player(src, L('busy'), 'error') end
@@ -580,7 +553,7 @@ function Commands.register()
             running[co] = src
             local fine, failure = pcall(handler, src, args, name)
             running[co] = nil
-            Pure.gateLeave(gate, src)
+            Commands.leave(src)
             if not fine then print(('^1[statewide] /%s: %s^7'):format(name, failure)) end
           end)
         end, false)

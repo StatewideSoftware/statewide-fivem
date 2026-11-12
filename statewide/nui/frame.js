@@ -1,10 +1,11 @@
-export const LOAD_TIMEOUT_MS = 10000;
+export const LOAD_TIMEOUT_MS = 30000;
 export const RESUME_TIMEOUT_MS = 5000;
 export const READY = "statewide:ready";
 export const EXPIRED = "statewide:expired";
 export const RESUME = "statewide:resume";
 export const HIDDEN = "statewide:hidden";
 export const TOKEN = "statewide:token";
+export const MUGSHOT = "statewide:mugshot";
 export const MAX_KEEP_MINUTES = 240;
 export const MIN_SCALE = 0.8;
 export const MAX_SCALE = 2;
@@ -15,6 +16,10 @@ export function isFrameMessage(data, origin, expectedOrigin, type) {
 }
 
 export const GAME_ORIGIN = "nui://game";
+
+export function mugshotSsn(data) {
+  return data !== null && typeof data === "object" && typeof data.ssn === "string" && /^\d{9}$/.test(data.ssn) ? data.ssn : null;
+}
 
 export function isGameMessage(data, source, origin, self) {
   if (source === null || source === undefined || data === null || typeof data !== "object" || typeof data.type !== "string") return false;

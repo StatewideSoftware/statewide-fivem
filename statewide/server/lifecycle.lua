@@ -1,21 +1,46 @@
-Lifecycle = { generation = 0 }
+Lifecycle = { generation = 0, announced = nil, aop = nil }
+
+function Lifecycle.setAop(v)
+  local name = Pure.aopName(v)
+  Lifecycle.aop = name
+  SetConvar('statewide_aop', name or '')
+end
+
+Lifecycle.UPDATE_CHECK_S = 21600
 
 local function fromPlayer()
   local s = tonumber(source)
   return s ~= nil and s > 0
 end
 
-function Lifecycle.checkVersion()
+function Lifecycle.checkVersion(initial)
   local res = api('GET', '/health', 'any')
   if res.status ~= 200 or not res.data then return end
-  print(('[statewide] connected to %s (API v%s), resource %s'):format(res.data.community and res.data.community.name or '?', res.data.apiVersion or '?', Http.version))
-  if Pure.versionLessThan(Http.version, res.data.minResourceVersion) then
-    print(('^3[statewide] this resource (%s) is older than the oldest version the API supports (%s): update it.^7'):format(Http.version, res.data.minResourceVersion))
+  Lifecycle.setAop(res.data.aop)
+  if initial then
+    print(('[statewide] connected to %s (API v%s), resource %s'):format(res.data.community and res.data.community.name or '?', res.data.apiVersion or '?', Http.version))
+    if Pure.versionLessThan(Http.version, res.data.minResourceVersion) then
+      print(('^3[statewide] this resource (%s) is older than the oldest version the API supports (%s): update it.^7'):format(Http.version, res.data.minResourceVersion))
+    end
+  end
+  local line, latest = Pure.updateNotice(Http.version, res.data, Lifecycle.announced)
+  if line then
+    print(line)
+    Lifecycle.announced = latest
+  end
+end
+
+function Lifecycle.watchUpdates(generation)
+  while generation == Lifecycle.generation do
+    Wait(Lifecycle.UPDATE_CHECK_S * 1000)
+    if generation ~= Lifecycle.generation then return end
+    pcall(Lifecycle.checkVersion, false)
   end
 end
 
 function Lifecycle.reconcile()
   if SceneMarkers then SceneMarkers.load() end
+  if Wraith then Wraith.load() end
   local connected, everyone = {}, {}
   for _, s in ipairs(GetPlayers()) do
     local src = tonumber(s)
@@ -53,11 +78,13 @@ function Lifecycle.start()
   Events.start(generation)
   Locations.start(generation)
   Modules.start(generation)
+  if ClockIn then ClockIn.watch(generation) end
   State.revalidate(generation)
   CreateThread(function()
-    Lifecycle.checkVersion()
+    Lifecycle.checkVersion(true)
     Commands.loadCardTheme()
     Lifecycle.reconcile()
+    Lifecycle.watchUpdates(generation)
   end)
 end
 

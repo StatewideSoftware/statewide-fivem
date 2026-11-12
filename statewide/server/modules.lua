@@ -2,11 +2,19 @@ Modules = { active = {} }
 
 local HEARTBEAT_SECONDS = 300
 local HEARTBEAT_RETRY_SECONDS = 10
-local RESOURCES = { ers = 'night_ers' }
+local RESOURCES = {
+  ers = 'night_ers',
+  wraith = Config.wraith and Config.wraith.resource or 'wk_wars2x',
+  tradio = Config.tradio and Config.tradio.resourceName or 'tRadio',
+  lbphone = Config.lbPhone and Config.lbPhone.resource or 'lb-phone',
+  phoneapp = Config.lbPhone and Config.lbPhone.resource or 'lb-phone',
+  nat = Config.nat and Config.nat.resource or 'framework',
+  c7fw = Config.c7fw and Config.c7fw.resource or 'c7-scripts-framework-v3',
+}
 local SERVER_ID_KEY = 'statewide:server_id'
 local serverId
 
-function Modules.resolve(name, onStart)
+function Modules.resolve(name, onStart, absentLine)
   local dependency = RESOURCES[name]
   local mode = ErsMap.mode((Config.modules or {})[name], dependency and GetResourceState(dependency))
   if mode == 'off' then return false end
@@ -34,7 +42,7 @@ function Modules.resolve(name, onStart)
     activate()
     return true
   end
-  print(('[statewide] %s module waiting: %s is not started'):format(name, dependency))
+  if absentLine ~= false then print(absentLine or ('[statewide] %s module waiting: %s is not started'):format(name, dependency)) end
   return false
 end
 

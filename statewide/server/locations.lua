@@ -4,6 +4,7 @@ local dirty = {}
 local lastLabels = {}
 local lastSent = {}
 local lastBeat = {}
+local refusedLabels = {}
 local inFlight = false
 
 function Locations.serverPostal(coords)
@@ -72,6 +73,7 @@ RegisterNetEvent('statewide:labels', function(street, crossStreet, postal, zone)
   local labels = Pure.cleanLabels(street, crossStreet, postal, Config.labels.maxLength, zone)
   if not labels then return end
   lastLabels[src] = t
+  if refusedLabels[src] and refusedLabels[src] == Pure.labelsKey(labels) then return end
   local p = State.get(src)
   local old = p.labels
   if old and old.street == labels.street and old.crossStreet == labels.crossStreet and old.postal == labels.postal and old.zone == labels.zone then return end
@@ -106,14 +108,50 @@ local function post(batch, legacy)
   return api('PATCH', '/units/locations', 'units', { body = { units = units }, retry = false })
 end
 
+local REFUSAL_PRINT_SECONDS = 60
+local refusalPrintedAt = nil
+
+local function warnRefused(t, line)
+  if refusalPrintedAt and t - refusalPrintedAt < REFUSAL_PRINT_SECONDS then return end
+  refusalPrintedAt = t
+  print(line)
+end
+
+local function isolate(batch, refusals)
+  local kept = {}
+  for i, e in ipairs(batch) do
+    if refusals.labels[i] then
+      e.body.location, e.body.postal, e.body.zoneCode = nil, nil, nil
+      local p = State.get(e.src)
+      if p then
+        refusedLabels[e.src] = Pure.labelsKey(p.labels)
+        p.labels = nil
+      end
+    end
+    if not refusals.drop[i] then kept[#kept + 1] = e end
+  end
+  return kept
+end
+
 local function send(batch, t)
   for _, e in ipairs(batch) do dirty[e.src] = nil end
   local legacy = legacySince ~= nil and t - legacySince < LEGACY_PROBE_SECONDS
   local res = post(batch, legacy)
-  if not legacy and (res.status == 400 or res.status == 422) then
-    local retry = post(batch, true)
-    if retry.status == 200 then legacySince = t end
-    res = retry
+  local isolated = 0
+  if res.status == 400 or res.status == 422 then
+    local refusals = Pure.locationRefusals(res.problem and res.problem.body)
+    local toLegacy = not legacy and refusals.legacy
+    for i = 1, #batch do
+      if refusals.labels[i] or refusals.drop[i] then isolated = isolated + 1 end
+    end
+    if toLegacy or isolated > 0 then
+      local kept = isolate(batch, refusals)
+      if #kept > 0 then
+        local retry = post(kept, legacy or toLegacy)
+        if retry.status == 200 and toLegacy then legacySince = t end
+        res = retry
+      end
+    end
   end
   if res.status == 200 or not Pure.retryable(res.status) then
     for _, e in ipairs(batch) do
@@ -121,7 +159,9 @@ local function send(batch, t)
       if e.beat then lastBeat[e.src] = t end
     end
     if res.status ~= 200 then
-      print(('^3[statewide] location batch of %d refused (HTTP %d); dropped until labels change^7'):format(#batch, res.status))
+      warnRefused(t, ('^3[statewide] location batch of %d refused (HTTP %d); dropped until labels change^7'):format(#batch, res.status))
+    elseif isolated > 0 then
+      warnRefused(t, ('^3[statewide] location batch: the CAD refused %d of %d units; the rest were stored^7'):format(isolated, #batch))
     end
     return
   end
@@ -180,6 +220,7 @@ AddEventHandler('playerDropped', function()
   lastLabels[src] = nil
   lastSent[src] = nil
   lastBeat[src] = nil
+  refusedLabels[src] = nil
   asked[src] = nil
   places[src] = nil
 end)

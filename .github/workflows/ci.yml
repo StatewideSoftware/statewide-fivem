@@ -33,6 +33,58 @@ jobs:
             exit 1
           fi
 
+      - name: tRadio module registers no net events
+        run: |
+          if grep -rn RegisterNetEvent statewide/modules/tradio; then
+            echo "statewide/modules/tradio must not register net events" >&2
+            exit 1
+          fi
+
+      - name: LB Phone module registers no net events
+        run: |
+          if grep -rn RegisterNetEvent statewide/modules/lbphone; then
+            echo "statewide/modules/lbphone must not register net events" >&2
+            exit 1
+          fi
+
+      - name: Framework connectors only read the framework
+        run: |
+          if grep -rnE "RegisterNetEvent|addPlayer|removePlayer|serverPlayers" statewide/modules/nat statewide/modules/c7fw; then
+            echo "statewide/modules/nat and statewide/modules/c7fw must not register net events or write into the framework" >&2
+            exit 1
+          fi
+
+      - name: Framework exports keep their resource guard
+        run: |
+          exports=$(grep -c "^exports('" statewide/server/framework.lua)
+          guards=$(grep -c "local resource = GetInvokingResource()" statewide/server/framework.lua)
+          if [ "$exports" -eq 0 ] || [ "$exports" -ne "$guards" ]; then
+            echo "every export in statewide/server/framework.lua must start with its GetInvokingResource() guard" >&2
+            exit 1
+          fi
+
+      - name: Phone app registers only statewide:phone
+        run: |
+          if grep -rn RegisterNetEvent statewide/modules/phoneapp/server.lua | grep -v "RegisterNetEvent('statewide:phone'"; then
+            echo "statewide/modules/phoneapp/server.lua may only register statewide:phone" >&2
+            exit 1
+          fi
+
+      - name: No API key or API origin in the phone app
+        run: |
+          if grep -rnE "statewide_api_key|GetConvar|https://[a-z0-9.-]+" statewide/modules/phoneapp/client.lua statewide/modules/phoneapp/ui statewide/client | grep -v "https://cfx-nui-"; then
+            echo "the phone app and client files must not hold the API key or an API origin" >&2
+            exit 1
+          fi
+
+      - name: MRPD adapter only forwards to statewide
+        run: |
+          test -f statewide/modules/mrpd/statewide_adapter.lua
+          if grep -nE "PerformHttpRequest|GetConvar|statewide_api_key|Authorization" statewide/modules/mrpd/statewide_adapter.lua; then
+            echo "statewide/modules/mrpd/statewide_adapter.lua must hold no HTTP, convar or key" >&2
+            exit 1
+          fi
+
       - name: Manifest version
         run: bash scripts/check-tag.sh "v$(sed -n "s/^version '\(.*\)'$/\1/p" statewide/fxmanifest.lua)"
 

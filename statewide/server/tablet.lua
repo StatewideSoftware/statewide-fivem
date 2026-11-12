@@ -3,6 +3,7 @@ local lastOpen = {}
 RegisterNetEvent('statewide:tablet', function()
   local src = tonumber(source)
   if not src or src <= 0 or not Config.tablet.enabled then return end
+  if Registration.refuse(src, 'tablet') then return end
   local now = GetGameTimer() / 1000
   if not Pure.cooldown(lastOpen[src], now, Config.tablet.cooldown) then
     return TriggerClientEvent('statewide:client:tablet', src, { error = 'cooldown' })
